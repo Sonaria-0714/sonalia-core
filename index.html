@@ -177,4 +177,345 @@
                   desc: "【善 ↔ 悪 / 正 ↔ 誤】\n正義、ルール、マナー、道徳的に正しいかを採点する機能。\n自分や他人の行動に対して厳格な基準を持ちます。",
                   role: "善悪判断・規律維持", thought: "「それは正しいことか？」「ルール違反ではないか？」" },
 
-                { id
+                { id: "BELONG", name: "所属OS", color: 0xFF8833, 
+                  desc: "【内 ↔ 外】\n集団の中にいるか、仲間外れになっていないかを確認する社会的な本能。\n孤独を恐れ、同調圧力を感じ取るセンサーです。",
+                  role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？」「浮いていないか？」" },
+
+                { id: "REWARD", name: "報酬OS", color: 0xFFD700, 
+                  desc: "【損 ↔ 得】\nコストパフォーマンス、利益、時間的・金銭的メリットを計算する。\n感情よりも実利を優先する、合理的な経済人モード。",
+                  role: "損得勘定・効率化", thought: "「やる価値はあるか？」「元は取れるか？」" },
+
+                { id: "MEANING", name: "意味OS", color: 0x9933FF, 
+                  desc: "【意義 ↔ 無意味】\n自分の人生にとって意味があるか、誇れるかを問う高次の欲求。\n損得抜きで、使命感や自己実現のために動く原動力。",
+                  role: "自己実現・意義の探求", thought: "「自分にとってどんな意味がある？」「誇れるか？」" },
+
+                { id: "TIME", name: "時間OS", color: 0x00FFFF, 
+                  desc: "【過去 ↔ 未来】\n過去の経験則（後悔・教訓）に基づくか、未来の予測（計画・不安）に基づくか。\n時間軸に沿って物事をシミュレーションします。",
+                  role: "過去参照・未来予測", thought: "「前もこうだった」「このままだと将来どうなる？」" },
+
+                { id: "HARMONY", name: "協調OS", color: 0xFF66AA, 
+                  desc: "【自分 ↔ 他人】\n自分の意志を通すか、全体のために譲るかのバランス調整機能。\n優しさ、思いやり、あるいは自己犠牲として現れます。",
+                  role: "利害調整・調和", thought: "「相手はどう思うか？」「自分が我慢すれば丸く収まるか？」" }
+            ],
+            COEF: [
+                { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, 
+                  desc: "【論理・分析係数】\n情報を整理・構造化し、筋道を立てる力。高いと説明上手だが、理屈っぽくなることも。", role: "ロジック構築・構造分解" },
+                { id: "EQ", name: "EQ (感情)", color: 0xFF6666, 
+                  desc: "【感情リテラシー係数】\n自分と他人の感情を察知し、扱う力。チームの潤滑油となる。", role: "共感・感情理解" },
+                { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, 
+                  desc: "【社会・対人係数】\n関係性をつくり、維持し、場に適応する力。人脈作りや空気感の調整。", role: "処世術・ネットワーキング" },
+                { id: "AQ", name: "AQ (逆境)", color: 0x888888, 
+                  desc: "【逆境耐性係数】\nストレス・困難・失敗を受けたときの粘りと回復力。", role: "レジリエンス・ストレス耐性" },
+                { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, 
+                  desc: "【好奇・創造係数】\n新しいものへの好奇心と、発想・工夫を生む力。", role: "アイデア創出・好奇心" },
+                { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, 
+                  desc: "【人間力・公平性係数】\n公平さ・誠実さ・倫理観・信頼性を保つ力。", role: "誠実さ・倫理観" },
+                { id: "MQ", name: "MQ (行動)", color: 0xFF3300, 
+                  desc: "【行動力係数】\n考えたことを実際の行動に移すスピードと量。", role: "実行力・スピード" },
+                { id: "KQ", name: "KQ (知識)", color: 0x00FF88, 
+                  desc: "【知識・経験活用係数】\n持っている知識・経験を必要な場面で取り出して使う力。", role: "応用力・知見活用" }
+            ],
+            DB: [
+                { id:"DESIRE", name: "欲求DB", color: 0xFF5500, pos: [-100, 60, -60], 
+                  desc: "「〜したい」「〜されたい」という根源的な渇望の保管庫。\n承認欲求、安全欲求などがここに含まれます。", role: "Motivation Source" },
+                { id:"EMOTION", name: "情動DB", color: 0x0055FF, pos: [100, 60, -60], 
+                  desc: "「快・不快」「恐怖・安心」などの感情記憶のクラウド。\n過去のトラウマや喜びが瞬時に呼び出されます。", role: "Emotional Memory" },
+                { id:"VALUE", name: "価値観DB", color: 0xFFD700, pos: [-100, -60, -60], 
+                  desc: "「〜すべき」「〜あるべき」という信念体系。\n親や社会から刷り込まれたルールが格納されています。", role: "Core Values" },
+                { id:"IMPLICIT", name: "無意識DB", color: 0x666666, pos: [100, -60, -60], 
+                  desc: "習慣、癖、反射的に取ってしまう行動パターンのログ。\n考えずに体が動く領域です。", role: "Auto-Pilot Scripts" }
+            ]
+        };
+
+        // ==========================================
+        // 2. SCENE SETUP
+        // ==========================================
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+        camera.position.set(0, 30, 240);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        document.body.appendChild(renderer.domElement);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.4;
+
+        // Texture Helpers
+        function createGlowTexture() {
+            const c = document.createElement('canvas'); c.width=64; c.height=64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(c);
+        }
+        const glowTex = createGlowTexture();
+        const interactables = [];
+        const mainGroup = new THREE.Group();
+        scene.add(mainGroup);
+
+        // ==========================================
+        // 3. OBJECT GENERATION (Explicit Circuits)
+        // ==========================================
+
+        // A. CENTRAL BRAIN (OS)
+        const osGroup = new THREE.Group();
+        mainGroup.add(osGroup);
+        
+        // Complex Wireframe Core
+        const coreGeo = new THREE.IcosahedronGeometry(14, 2);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, wireframe: true, transparent: true, opacity: 0.1 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        osGroup.add(core);
+
+        const osNodes = [];
+        DATA.OS.forEach((d, i) => {
+            const phi = Math.acos( -1 + ( 2 * i ) / 8 );
+            const theta = Math.sqrt( 8 * Math.PI ) * phi;
+            const r = 20;
+            const x = r * Math.cos(theta) * Math.sin(phi);
+            const y = r * Math.sin(theta) * Math.sin(phi);
+            const z = r * Math.cos(phi);
+            const pos = new THREE.Vector3(x, y, z);
+
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: d.color }));
+            mesh.position.copy(pos);
+            mesh.userData = { type: 'OS', data: d };
+            
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+            spr.scale.set(25,25,1);
+            mesh.add(spr);
+
+            osGroup.add(mesh);
+            interactables.push(mesh);
+            osNodes.push({pos, color: d.color});
+        });
+
+        // B. OUTER RING (Coefficients)
+        const coefGroup = new THREE.Group();
+        mainGroup.add(coefGroup);
+        const coefMeshes = [];
+
+        DATA.COEF.forEach((d, i) => {
+            const angle = (i / 8) * Math.PI * 2;
+            const rad = 75;
+            const x = Math.cos(angle) * rad;
+            const z = Math.sin(angle) * rad;
+            const pos = new THREE.Vector3(x, 0, z);
+
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(5,5,5), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+            mesh.position.copy(pos);
+            mesh.userData = { type: 'COEF', data: d };
+
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+            spr.scale.set(35,35,1);
+            mesh.add(spr);
+
+            coefGroup.add(mesh);
+            interactables.push(mesh);
+            coefMeshes.push(mesh); // For connecting later
+        });
+
+        // C. NEURAL BUNDLES (Explicit Circuit Lines)
+        // OSと係数を「明確なカーブ」でつなぐ（KamuiOS風）
+        const circuitGroup = new THREE.Group();
+        mainGroup.add(circuitGroup);
+
+        coefMeshes.forEach((targetMesh, i) => {
+            // Find closest OS node or just center
+            const startPos = new THREE.Vector3(0,0,0);
+            const endPos = targetMesh.position;
+            
+            // Bezier Curve for organic connection
+            const midPos = startPos.clone().add(endPos).multiplyScalar(0.5);
+            midPos.y += 20; // Arch up
+
+            const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, endPos);
+            const points = curve.getPoints(20);
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            const material = new THREE.LineBasicMaterial({ 
+                color: targetMesh.userData.data.color, 
+                transparent: true, opacity: 0.3,
+                linewidth: 2 // Note: WebGL linewidth is limited
+            });
+            
+            // Create a "Tube" look using multiple lines or just bright lines
+            const line = new THREE.Line(geometry, material);
+            circuitGroup.add(line);
+        });
+
+        // D. DB CLOUDS (Particles)
+        const dbGroup = new THREE.Group();
+        mainGroup.add(dbGroup);
+
+        DATA.DB.forEach(d => {
+            const count = 150;
+            const pPos = [];
+            const col = new THREE.Color(d.color);
+            const pCols = [];
+
+            for(let i=0; i<count; i++) {
+                const spread = 40;
+                const v = new THREE.Vector3(
+                    d.pos[0] + (Math.random()-0.5)*spread,
+                    d.pos[1] + (Math.random()-0.5)*spread,
+                    d.pos[2] + (Math.random()-0.5)*spread
+                );
+                pPos.push(v.x, v.y, v.z);
+                pCols.push(col.r, col.g, col.b);
+            }
+            
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(pCols, 3));
+            const mat = new THREE.PointsMaterial({ size: 2.0, map: glowTex, vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
+            const pts = new THREE.Points(geo, mat);
+            dbGroup.add(pts);
+
+            // Connect lines from Center to DB
+            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(d.pos[0], d.pos[1], d.pos[2])]);
+            const lineMat = new THREE.LineBasicMaterial({ color: d.color, transparent: true, opacity: 0.1 });
+            dbGroup.add(new THREE.Line(lineGeo, lineMat));
+
+            const box = new THREE.Mesh(new THREE.BoxGeometry(50,50,50), new THREE.MeshBasicMaterial({visible:false}));
+            box.position.set(d.pos[0], d.pos[1], d.pos[2]);
+            box.userData = { type: 'DB', data: d };
+            interactables.push(box);
+        });
+
+        // E. LOGIC PULSE
+        const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
+        pulseSpr.scale.set(25,25,1);
+        pulse.add(pulseSpr);
+        scene.add(pulse);
+
+        // ==========================================
+        // 4. ANIMATION LOOP
+        // ==========================================
+        const clock = new THREE.Clock();
+        const logicText = document.getElementById('logic-status');
+        
+        // Hide Loader after delay
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const l = document.getElementById('loader');
+                l.style.opacity = 0;
+                setTimeout(() => { l.style.display = 'none'; }, 1500);
+            }, 3000); // 3秒見せる（ロゴアニメのため）
+        });
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const time = clock.getElapsedTime();
+            controls.update();
+
+            // Organic Movement
+            osGroup.rotation.y = Math.sin(time*0.1)*0.1;
+            const beat = 1 + Math.sin(time*2)*0.03;
+            osGroup.scale.set(beat, beat, beat);
+            
+            // Circuits pulsate with the brain
+            circuitGroup.scale.set(beat, beat, beat);
+
+            coefGroup.rotation.y = time * -0.1;
+            coefMeshes.forEach((m,i) => {
+                m.rotation.x += 0.02;
+                m.rotation.z += 0.01; 
+                m.position.y = Math.sin(time + i)*8; // Floating
+            });
+
+            // Logic Flow Animation (Input -> OS -> DB -> Coef -> Output)
+            const t = time % 7.0; // 7 sec cycle
+            let target = new THREE.Vector3();
+            let col = 0xffffff;
+            let txt = "SYSTEM IDLE";
+
+            if (t < 1.5) { // Input
+                let p = t/1.5;
+                target.set(0, 180*(1-p), 120*(1-p));
+                txt = ">>> SENSORY INPUT DETECTED";
+            } else if (t < 3.5) { // DB Access
+                let p = (t-1.5)/2.0;
+                let dbPos = new THREE.Vector3(100, 60, -60);
+                if(p<0.5) target.lerpVectors(new THREE.Vector3(), dbPos, p*2);
+                else target.lerpVectors(dbPos, new THREE.Vector3(), (p-0.5)*2);
+                col = 0x0055FF;
+                txt = "::: REFERENCING DB MEMORY :::";
+            } else if (t < 5.0) { // Processing
+                let p = (t-3.5)/1.5;
+                target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(75,0,0), p);
+                col = 0x00CCFF;
+                txt = "/// COEFFICIENT PROCESSING ///";
+            } else { // Output
+                let p = (t-5.0)/2.0;
+                target.lerpVectors(new THREE.Vector3(75,0,0), new THREE.Vector3(300,0,0), p);
+                col = 0xFF3300;
+                txt = "!!! ACTION EXECUTED !!!";
+            }
+
+            pulse.position.copy(target);
+            pulse.material.color.setHex(col);
+            pulseSpr.material.color.setHex(col);
+            logicText.innerText = txt;
+            logicText.style.color = '#' + col.toString(16).padStart(6,'0');
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        // ==========================================
+        // 5. INTERACTION & UI
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        window.addEventListener('pointerdown', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(interactables);
+            if(hits.length > 0) {
+                showPanel(hits[0].object.userData);
+            } else {
+                hidePanel();
+            }
+        });
+
+        const panel = document.getElementById('panel');
+        const pClose = document.getElementById('p-close');
+        pClose.addEventListener('click', hidePanel);
+
+        function showPanel(ud) {
+            const d = ud.data;
+            document.getElementById('p-tag').innerText = ud.type;
+            document.getElementById('p-title').innerText = d.name || d.id;
+            document.getElementById('p-title').style.color = '#' + new THREE.Color(d.color).getHexString();
+            
+            // Rich Data Injection
+            document.getElementById('p-desc').innerText = d.desc;
+            document.getElementById('p-role').innerText = d.role || "N/A";
+            document.getElementById('p-thought').innerText = d.thought || "N/A";
+            
+            panel.classList.add('active');
+        }
+        function hidePanel() {
+            panel.classList.remove('active');
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
