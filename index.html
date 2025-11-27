@@ -3,268 +3,187 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonalia System: Neural Fabric</title>
+    <title>Sonalia System: Universal</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #010103; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
-        canvas { display: block; width: 100vw; height: 100vh; }
-
-        /* UIレイヤー */
-        #ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-            display: flex; flex-direction: column; justify-content: space-between; z-index: 10;
-        }
-
-        #hud-left { padding: 30px; }
-        .hud-title {
-            color: #fff; font-size: 14px; letter-spacing: 3px; border-left: 3px solid #00ffff;
-            padding-left: 10px; margin-bottom: 10px; text-transform: uppercase;
-            text-shadow: 0 0 10px rgba(0,255,255,0.5);
-        }
-        .hud-row {
-            color: rgba(255,255,255,0.6); font-family: 'Consolas', monospace; font-size: 11px;
-            margin-bottom: 4px; display: flex; align-items: center; gap: 10px;
-        }
-        .status-dot { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; }
-
-        #logic-flow {
-            text-align: center; padding-bottom: 40px;
-            font-family: 'Consolas', monospace; font-size: 16px; letter-spacing: 1px;
-            text-shadow: 0 0 15px currentColor; transition: color 0.3s;
-        }
-
-        #panel {
-            position: absolute; top: 0; right: 0; width: 400px; height: 100%;
-            background: rgba(10, 15, 25, 0.7);
-            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-            border-left: 1px solid rgba(255, 255, 255, 0.15);
-            transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-            pointer-events: auto; display: flex; flex-direction: column;
-            box-shadow: -20px 0 80px rgba(0,0,0,0.6);
-        }
-        #panel.active { transform: translateX(0); }
-
-        .panel-inner { padding: 40px; overflow-y: auto; color: #eee; }
-        .tag {
-            display: inline-block; font-size: 10px; font-weight: 700; padding: 4px 8px; 
-            border-radius: 2px; color: #000; background: #fff; margin-bottom: 15px; letter-spacing: 1px;
-        }
-        h2 { margin: 0 0 20px 0; font-size: 28px; font-weight: 300; letter-spacing: 1px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
-        p { font-size: 14px; line-height: 1.8; color: #ccc; margin-bottom: 30px; font-weight: 400; }
-        
-        .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
-        .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; }
-        .data-label { font-size: 10px; color: #888; display: block; margin-bottom: 3px; }
-        .data-val { font-size: 12px; color: #fff; font-family: 'Consolas', monospace; }
-
-        .close-btn {
-            position: absolute; top: 20px; right: 20px; width: 30px; height: 30px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%; transition: 0.3s; color: #fff;
-        }
-        .close-btn:hover { background: rgba(255,255,255,0.1); border-color: #fff; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Consolas', sans-serif; }
+        canvas { display: block; }
 
         /* ローディング画面 */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center; flex-direction: column;
-            transition: opacity 1s ease-out; pointer-events: none;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s;
         }
-        .loader-text { color: #00ffff; font-family: monospace; letter-spacing: 5px; animation: blink 1s infinite; margin-bottom: 20px; }
+        .loader-text { color: #00ffff; font-size: 14px; letter-spacing: 3px; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
         
-        /* エラー表示エリア（普段は隠れている） */
-        #error-msg {
-            color: #ff3333; font-family: monospace; font-size: 12px; max-width: 80%;
-            background: rgba(20,0,0,0.8); padding: 10px; border: 1px solid red; display: none;
+        /* エラーログ表示（万が一のため） */
+        #debug-log {
+            color: red; font-size: 12px; margin-top: 20px; text-align: center; display: none; border: 1px solid red; padding: 10px;
         }
+
+        /* UIレイヤー */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        #hud-left { position: absolute; top: 20px; left: 20px; }
+        .hud-line { color: rgba(0, 255, 255, 0.7); font-size: 12px; margin-bottom: 5px; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
+        
+        #logic-flow {
+            position: absolute; bottom: 40px; width: 100%; text-align: center;
+            color: #fff; font-size: 16px; text-shadow: 0 0 10px currentColor;
+        }
+
+        /* 詳細パネル */
+        #panel {
+            position: absolute; top: 0; right: 0; width: 350px; height: 100%;
+            background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333;
+            transform: translateX(100%); transition: 0.3s; pointer-events: auto;
+            color: #eee; padding: 30px; box-sizing: border-box;
+        }
+        #panel.active { transform: translateX(0); }
+        h2 { color: #00ffff; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        .close-btn { position: absolute; top: 10px; right: 20px; cursor: pointer; font-size: 24px; }
     </style>
 
-    <script>
-        window.onerror = function(msg, url, line, col, error) {
-            const el = document.getElementById('error-msg');
-            const txt = document.getElementById('loading-txt');
-            if(el) {
-                el.style.display = 'block';
-                el.innerHTML = "SYSTEM ERROR DETECTED:<br>" + msg;
-                if(txt) txt.textContent = "CONNECTION FAILED";
-            }
-        };
-    </script>
-
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://esm.sh/three@0.160.0",
-                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text" id="loading-txt">BUILDING NEURAL PATHWAYS...</div>
-        <div id="error-msg"></div>
+        <div class="loader-text">INITIALIZING SYSTEM (COMPATIBILITY MODE)...</div>
+        <div id="debug-log"></div>
     </div>
 
     <div id="ui-layer">
         <div id="hud-left">
-            <div class="hud-title">Sonalia Logic Core</div>
-            <div class="hud-row"><div class="status-dot"></div> SYSTEM ONLINE</div>
-            <div class="hud-row">ARCHITECTURE: NEURAL FABRIC v3.1</div>
-            <div class="hud-row">MODE: STABLE CONNECTION</div>
+            <div class="hud-line">SONALIA CORE: ONLINE</div>
+            <div class="hud-line">RENDERER: LEGACY STABLE</div>
         </div>
-        <div id="logic-flow">WAITING FOR SIGNAL...</div>
+        <div id="logic-flow">WAITING...</div>
     </div>
 
     <div id="panel">
-        <div class="close-btn" id="p-close">✕</div>
-        <div class="panel-inner">
-            <span class="tag" id="p-tag">CATEGORY</span>
-            <h2 id="p-title">Title</h2>
-            <p id="p-desc">Description text here.</p>
-            <div class="data-grid">
-                <div class="data-item">
-                    <span class="data-label">ROLE</span>
-                    <span class="data-val" id="p-role">Analysis</span>
-                </div>
-                <div class="data-item">
-                    <span class="data-label">CONNECTION</span>
-                    <span class="data-val" id="p-conn">Active</span>
-                </div>
-            </div>
-        </div>
+        <div class="close-btn" onclick="document.getElementById('panel').classList.remove('active')">×</div>
+        <h2 id="p-title">TITLE</h2>
+        <div style="font-size:10px; background:#fff; color:#000; display:inline-block; padding:2px 5px; margin-bottom:15px;" id="p-type">TYPE</div>
+        <p id="p-desc" style="font-size:13px; line-height:1.6;">Description</p>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-        import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-        import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-        import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+    <script>
+        // エラー捕捉
+        window.onerror = function(msg, url, line) {
+            const d = document.getElementById('debug-log');
+            d.style.display = 'block';
+            d.innerHTML += "Error: " + msg + "<br>";
+        };
 
-        // 定義データ
+        // Three.jsが読み込まれたかチェック
+        if (typeof THREE === 'undefined') {
+            document.getElementById('debug-log').style.display = 'block';
+            document.getElementById('debug-log').innerHTML = "FAILED TO LOAD THREE.JS LIBRARY.<br>Please check your internet connection.";
+            throw new Error("Three.js not loaded");
+        }
+
+        // ==========================================
+        // DATA DEFINITION
+        // ==========================================
         const DATA = {
             OS: [
-                { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "【危険 ↔ 安全】\n最優先でリスクを回避し、生命維持と安全確保を図る判断基準。", role: "Risk Management" },
-                { id: "LIFE",     name: "生活OS", color: 0x33FF33, desc: "【既知 ↔ 未知】\nルーティンの維持、あるいは新しい変化への適応を判断する。", role: "Routine / Adapt" },
-                { id: "EVAL",     name: "評価OS", color: 0x3388FF, desc: "【善 ↔ 悪】\n正義、ルール、マナー、道徳的に正しいかを採点する。", role: "Judgment" },
-                { id: "BELONG",   name: "所属OS", color: 0xFF8833, desc: "【内 ↔ 外】\n集団の中にいるか、仲間外れになっていないかを確認する。", role: "Social Safety" },
-                { id: "REWARD",   name: "報酬OS", color: 0xFFD700, desc: "【損 ↔ 得】\nコストパフォーマンス、利益、メリットがあるかを計算する。", role: "Cost / Benefit" },
-                { id: "MEANING",  name: "意味OS", color: 0x9933FF, desc: "【意義 ↔ 無意味】\n自分の人生にとって意味があるか、誇れるかを問う。", role: "Purpose" },
-                { id: "TIME",     name: "時間OS", color: 0x00FFFF, desc: "【過去 ↔ 未来】\n過去の経験則に基づくか、未来の予測に基づくか。", role: "Prediction" },
-                { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, desc: "【自分 ↔ 他人】\n自分を通すか、全体のために譲るかのバランス調整。", role: "Coordination" }
+                { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "危険回避・安全確保を最優先するOS。" },
+                { id: "LIFE",     name: "生活OS", color: 0x33FF33, desc: "ルーティン維持・新規探索を判断するOS。" },
+                { id: "EVAL",     name: "評価OS", color: 0x3388FF, desc: "善悪・正誤・ルールを判定するOS。" },
+                { id: "BELONG",   name: "所属OS", color: 0xFF8833, desc: "集団の内外・仲間意識を判定するOS。" },
+                { id: "REWARD",   name: "報酬OS", color: 0xFFD700, desc: "損得・コスパ・メリットを計算するOS。" },
+                { id: "MEANING",  name: "意味OS", color: 0x9933FF, desc: "意義・自己実現・物語性を重視するOS。" },
+                { id: "TIME",     name: "時間OS", color: 0x00FFFF, desc: "過去の経験か、未来の予測かを判断するOS。" },
+                { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, desc: "自分と他人の利害バランスを調整するOS。" }
             ],
             COEF: [
-                { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, desc: "情報を構造化し、ロジックを組む力。", role: "Logic Processing" },
-                { id: "EQ", name: "EQ (感情)", color: 0xFF6666, desc: "感情を読み取り、配慮する力。", role: "Empathy Engine" },
-                { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, desc: "人間関係を構築し、場に適応する力。", role: "Social Networking" },
-                { id: "AQ", name: "AQ (逆境)", color: 0x888888, desc: "ストレスや失敗から立ち直る力。", role: "Resilience" },
-                { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, desc: "新しいアイデアや工夫を生む力。", role: "Innovation" },
-                { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, desc: "誠実さや公平さを保つ倫理観。", role: "Ethics Core" },
-                { id: "MQ", name: "MQ (行動)", color: 0xFF3300, desc: "思考を実行に移すスピードと量。", role: "Action Driver" },
-                { id: "KQ", name: "KQ (知識)", color: 0x00FF88, desc: "過去の経験を引き出して活用する力。", role: "Knowledge Base" }
+                { id: "IQ", color: 0x00CCFF, desc: "論理・分析係数。" }, { id: "EQ", color: 0xFF6666, desc: "感情リテラシー係数。" },
+                { id: "SQ", color: 0xFFCC00, desc: "社会・対人係数。" }, { id: "AQ", color: 0x888888, desc: "逆境耐性係数。" },
+                { id: "CQ", color: 0xAA00FF, desc: "好奇・創造係数。" }, { id: "HQ", color: 0xFFFFFF, desc: "人間力・倫理係数。" },
+                { id: "MQ", color: 0xFF3300, desc: "行動力係数。" }, { id: "KQ", color: 0x00FF88, desc: "知識活用係数。" }
             ],
             DB: [
-                { id: "DESIRE", name: "欲求DB", color: 0xFF5500, pos: [-100, 70, -70], desc: "根源的な欲求の記憶領域。", role: "Core Drive" },
-                { id: "EMOTION", name: "情動DB", color: 0x0055FF, pos: [100, 70, -70], desc: "快・不快の感情記憶領域。", role: "Affective Memory" },
-                { id: "VALUE", name: "価値観DB", color: 0xFFD700, pos: [-100, -70, -70], desc: "信念・ルールのデータベース。", role: "Belief System" },
-                { id: "IMPLICIT", name: "無意識DB", color: 0x666666, pos: [100, -70, -70], desc: "習慣や反射行動のログ。", role: "Auto Pilot" }
+                { id:"DESIRE", name: "欲求DB", color: 0xFF5500, pos: [-90, 60, -60], desc: "根源的な欲求の記憶。" },
+                { id:"EMOTION", name: "情動DB", color: 0x0055FF, pos: [90, 60, -60], desc: "快・不快の感情記憶。" },
+                { id:"VALUE", name: "価値観DB", color: 0xFFD700, pos: [-90, -60, -60], desc: "信念・ルールのログ。" },
+                { id:"IMPLICIT", name: "無意識DB", color: 0x666666, pos: [90, -60, -60], desc: "習慣や反射行動のログ。" }
             ]
         };
 
-        // シーン設定
+        // ==========================================
+        // SCENE SETUP
+        // ==========================================
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x010103, 0.002);
+        scene.fog = new THREE.FogExp2(0x000000, 0.002);
 
-        const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 3000);
-        camera.position.set(0, 40, 280);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
+        camera.position.set(0, 40, 250);
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
+        renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.05;
         controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.3;
+        controls.autoRotateSpeed = 0.5;
 
-        // Post-Processing
-        const renderScene = new RenderPass(scene, camera);
-        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.5, 0.9);
-        const composer = new EffectComposer(renderer);
-        composer.addPass(renderScene);
-        composer.addPass(bloomPass);
-
-        // マテリアル
-        function createGlowMat(colorHex, opacity = 1.0) {
-            return new THREE.MeshBasicMaterial({ 
-                color: new THREE.Color(colorHex).multiplyScalar(2.0),
-                transparent: true, opacity: opacity,
-                blending: THREE.AdditiveBlending, depthWrite: false
-            });
-        }
-        function createWireMat(colorHex, opacity = 0.3) {
-             return new THREE.LineBasicMaterial({
-                color: new THREE.Color(colorHex).multiplyScalar(1.5),
-                transparent: true, opacity: opacity, blending: THREE.AdditiveBlending
-            });
-        }
+        // グローテクスチャ生成
         function createGlowTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
+            const c = document.createElement('canvas'); c.width=64; c.height=64;
+            const ctx = c.getContext('2d');
             const g = ctx.createRadialGradient(32,32,0, 32,32,32);
             g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.3, 'rgba(255,255,255,0.2)');
+            g.addColorStop(0.4, 'rgba(255,255,255,0.2)');
             g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g;
-            ctx.fillRect(0,0,64,64);
-            return new THREE.CanvasTexture(canvas);
+            ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(c);
         }
-
+        const glowTex = createGlowTexture();
         const interactables = [];
         const allNodes = [];
+
         const mainGroup = new THREE.Group();
         scene.add(mainGroup);
 
-        // オブジェクト生成
+        // ==========================================
+        // OBJECTS
+        // ==========================================
+
         // A. OS Core
         const osGroup = new THREE.Group();
         mainGroup.add(osGroup);
-        const coreGeo = new THREE.IcosahedronGeometry(18, 3);
-        const pos = coreGeo.attributes.position;
-        for(let i=0; i<pos.count; i++){
-            const noise = 1 + Math.random()*0.15;
-            pos.setXYZ(i, pos.getX(i)*noise, pos.getY(i)*noise, pos.getZ(i)*noise);
-        }
-        const coreMesh = new THREE.Mesh(coreGeo, createWireMat(0x0088ff, 0.1));
-        osGroup.add(coreMesh);
         
+        // 脳のワイヤー
+        const coreGeo = new THREE.IcosahedronGeometry(15, 1);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, wireframe: true, transparent: true, opacity: 0.15 });
+        const core = new THREE.Mesh(coreGeo, coreMat);
+        osGroup.add(core);
+
         DATA.OS.forEach((d, i) => {
             const phi = Math.acos( -1 + ( 2 * i ) / 8 );
             const theta = Math.sqrt( 8 * Math.PI ) * phi;
-            const r = 22;
+            const r = 20;
             const x = r * Math.cos(theta) * Math.sin(phi);
             const y = r * Math.sin(theta) * Math.sin(phi);
             const z = r * Math.cos(phi);
-            const nodePos = new THREE.Vector3(x, y, z);
+            const pos = new THREE.Vector3(x, y, z);
 
-            const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(3, 1), createGlowMat(d.color));
-            mesh.position.copy(nodePos);
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({ color: d.color }));
+            mesh.position.copy(pos);
             mesh.userData = { type: 'OS', data: d };
             
-            const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlowTexture(), color: d.color, blending: THREE.AdditiveBlending }));
-            glow.scale.set(25, 25, 1);
-            mesh.add(glow);
+            // 光るスプライト（Bloomの代わり）
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+            spr.scale.set(20,20,1);
+            mesh.add(spr);
 
             osGroup.add(mesh);
             interactables.push(mesh);
-            allNodes.push({ pos: nodePos.clone(), color: d.color, group: 'OS' });
+            allNodes.push({ pos: pos, color: new THREE.Color(d.color), group:'OS' });
         });
 
         // B. Coefficients
@@ -274,29 +193,23 @@
 
         DATA.COEF.forEach((d, i) => {
             const angle = (i / 8) * Math.PI * 2;
-            const rad = 75;
+            const rad = 70;
             const x = Math.cos(angle) * rad;
             const z = Math.sin(angle) * rad;
-            const nodePos = new THREE.Vector3(x, 0, z);
+            const pos = new THREE.Vector3(x, 0, z);
 
-            const geo = new THREE.BoxGeometry(5, 5, 5);
-            const edges = new THREE.EdgesGeometry(geo);
-            const line = new THREE.LineSegments(edges, createWireMat(d.color, 0.8));
-            const inner = new THREE.Mesh(new THREE.BoxGeometry(3.5,3.5,3.5), createGlowMat(d.color, 0.6));
-            const group = new THREE.Group();
-            group.add(line);
-            group.add(inner);
-            group.position.copy(nodePos);
-            group.userData = { type: 'COEF', data: d };
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(4,4,4), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+            mesh.position.copy(pos);
+            mesh.userData = { type: 'COEF', data: d };
 
-            const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlowTexture(), color: d.color, blending: THREE.AdditiveBlending, opacity: 0.5 }));
-            glow.scale.set(40, 40, 1);
-            group.add(glow);
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+            spr.scale.set(30,30,1);
+            mesh.add(spr);
 
-            coefGroup.add(group);
-            interactables.push(group);
-            coefMeshes.push(group);
-            allNodes.push({ pos: nodePos.clone(), color: d.color, group: 'COEF' });
+            coefGroup.add(mesh);
+            interactables.push(mesh);
+            coefMeshes.push(mesh);
+            allNodes.push({ pos: pos, color: new THREE.Color(d.color), group:'COEF' });
         });
 
         // C. DB Clouds
@@ -304,215 +217,153 @@
         mainGroup.add(dbGroup);
 
         DATA.DB.forEach(d => {
-            const pCount = 300;
-            const pGeo = new THREE.BufferGeometry();
-            const pPos = [];
-            for(let i=0; i<pCount; i++) {
-                const spread = 50;
+            const count = 150;
+            const geo = new THREE.Geometry(); // Legacy compatible geometry
+            for(let i=0; i<count; i++) {
+                const spread = 40;
                 const v = new THREE.Vector3(
                     d.pos[0] + (Math.random()-0.5)*spread,
                     d.pos[1] + (Math.random()-0.5)*spread,
                     d.pos[2] + (Math.random()-0.5)*spread
                 );
-                pPos.push(v.x, v.y, v.z);
-                if(Math.random() > 0.95) allNodes.push({ pos: v.clone(), color: d.color, group: 'DB' });
+                geo.vertices.push(v);
+                if(Math.random()>0.9) allNodes.push({ pos: v, color: new THREE.Color(d.color), group:'DB' });
             }
-            pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-            const pMat = new THREE.PointsMaterial({ 
-                color: new THREE.Color(d.color).multiplyScalar(1.5),
-                size: 2.0, transparent: true, opacity: 0.6,
-                map: createGlowTexture(), blending: THREE.AdditiveBlending, depthWrite: false
-            });
-            const pts = new THREE.Points(pGeo, pMat);
+            const mat = new THREE.PointsMaterial({ color: d.color, size: 2, map: glowTex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+            const pts = new THREE.Points(geo, mat);
             dbGroup.add(pts);
 
-            const box = new THREE.Mesh(new THREE.BoxGeometry(60,60,60), new THREE.MeshBasicMaterial({visible:false}));
+            const box = new THREE.Mesh(new THREE.BoxGeometry(50,50,50), new THREE.MeshBasicMaterial({visible:false}));
             box.position.set(d.pos[0], d.pos[1], d.pos[2]);
             box.userData = { type: 'DB', data: d };
             interactables.push(box);
-            dbGroup.add(box);
         });
 
-        // Connections
-        const connectionsGeo = new THREE.BufferGeometry();
-        const connectionPos = [];
-        const connectionColors = [];
-        const maxDist = 90;
-
+        // D. Synapse Connections (Lines)
+        const lineGeo = new THREE.Geometry();
+        const lineColors = [];
+        
+        // 簡易的な接続生成
         for(let i=0; i<allNodes.length; i++) {
             for(let j=i+1; j<allNodes.length; j++) {
                 const n1 = allNodes[i];
                 const n2 = allNodes[j];
                 const dist = n1.pos.distanceTo(n2.pos);
-                if(dist < maxDist && (dist < 30 || n1.group !== n2.group)) {
-                    connectionPos.push(n1.pos.x, n1.pos.y, n1.pos.z);
-                    connectionPos.push(n2.pos.x, n2.pos.y, n2.pos.z);
-                    const c1 = new THREE.Color(n1.color);
-                    const c2 = new THREE.Color(n2.color);
-                    connectionColors.push(c1.r, c1.g, c1.b);
-                    connectionColors.push(c2.r, c2.g, c2.b);
+                // 距離が近く、かつOS-COEF間などをつなぐ
+                if(dist < 80 && (dist < 25 || n1.group !== n2.group)) {
+                    lineGeo.vertices.push(n1.pos);
+                    lineGeo.vertices.push(n2.pos);
+                    lineColors.push(n1.color);
+                    lineColors.push(n2.color);
                 }
             }
         }
-        connectionsGeo.setAttribute('position', new THREE.Float32BufferAttribute(connectionPos, 3));
-        connectionsGeo.setAttribute('color', new THREE.Float32BufferAttribute(connectionColors, 3));
-        
-        const synapticMat = new THREE.LineBasicMaterial({
-            vertexColors: true, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending
-        });
-        const synapticNet = new THREE.LineSegments(connectionsGeo, synapticMat);
-        mainGroup.add(synapticNet);
+        lineGeo.colors = lineColors;
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+        const synapses = new THREE.LineSegments(lineGeo, lineMat);
+        mainGroup.add(synapses);
 
-        // Tubes
-        coefMeshes.forEach(cm => {
-            const curve = new THREE.QuadraticBezierCurve3(
-                new THREE.Vector3(0,0,0),
-                new THREE.Vector3(cm.position.x/2, 30, cm.position.z/2),
-                cm.position
-            );
-            const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.5, 8, false);
-            const tubeMat = createGlowMat(cm.userData.data.color, 0.3);
-            const tube = new THREE.Mesh(tubeGeo, tubeMat);
-            mainGroup.add(tube);
-        });
 
-        // Pulse
-        const pulse = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        const pulseGlow = new THREE.Sprite(new THREE.SpriteMaterial({map: createGlowTexture(), color: 0xffffff, blending: THREE.AdditiveBlending}));
-        pulseGlow.scale.set(15,15,1);
-        pulse.add(pulseGlow);
+        // E. Logic Pulse
+        const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
+        const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
+        pulseSpr.scale.set(15,15,1);
+        pulse.add(pulseSpr);
         scene.add(pulse);
-        
-        const trails = [];
-        for(let i=0; i<30; i++) {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(2 * (1 - i/30)), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4/(i*0.1+1) }));
-            scene.add(m);
-            trails.push(m);
-        }
 
-        // Logic Loop
+        // ==========================================
+        // ANIMATION
+        // ==========================================
         const clock = new THREE.Clock();
         const flowText = document.getElementById('logic-flow');
-        const loader = document.getElementById('loader');
-
-        // ローディング完了処理
-        setTimeout(() => {
-            if(loader) {
-                loader.style.opacity = 0;
-                setTimeout(() => { loader.style.display = 'none'; }, 1000);
-            }
-        }, 1500);
+        
+        // ローディング消去
+        setTimeout(function(){
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(function(){ document.getElementById('loader').style.display='none'; }, 500);
+        }, 1000);
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
             controls.update();
 
-            const heartbeat = 1 + Math.sin(time * 2.5) * 0.03 + Math.sin(time * 8) * 0.01;
-            osGroup.scale.set(heartbeat, heartbeat, heartbeat);
-            synapticNet.scale.set(heartbeat, heartbeat, heartbeat);
-
-            coefMeshes.forEach((mesh, i) => {
-                mesh.rotation.x += 0.01 + i*0.001;
-                mesh.rotation.z += 0.02;
-                mesh.position.y = Math.sin(time + i) * 5;
+            // 動き
+            osGroup.rotation.y = Math.sin(time*0.2)*0.2;
+            coefGroup.rotation.y = time * -0.15;
+            coefMeshes.forEach((m,i) => {
+                m.rotation.x += 0.02; 
+                m.position.y = Math.sin(time + i)*5;
             });
-            dbGroup.rotation.y = Math.sin(time * 0.1) * 0.05;
-            synapticNet.rotation.y = Math.sin(time * 0.05) * 0.02;
+            synapses.rotation.y = Math.sin(time*0.1)*0.05;
 
-            const t = time % 6.0;
-            let targetPos = new THREE.Vector3();
-            let status = "";
-            let colorHex = 0xffffff;
+            // パルスロジック
+            const t = time % 5.0;
+            let target = new THREE.Vector3();
+            let col = 0xffffff;
+            let txt = "";
 
-            if (t < 1.5) {
-                const p = t / 1.5;
-                targetPos.set(0, 180 * (1-p), 120 * (1-p)); 
-                status = ">>> SENSORY INPUT DETECTED >>>";
-                colorHex = 0xffffff;
+            if (t < 1.0) {
+                let p = t;
+                target.set(0, 150*(1-p), 100*(1-p));
+                txt = ">>> INPUT >>>";
+            } else if (t < 2.5) {
+                let p = (t-1.0)/1.5;
+                let db = new THREE.Vector3(90, 60, -60);
+                if(p<0.5) target.lerpVectors(new THREE.Vector3(), db, p*2);
+                else target.lerpVectors(db, new THREE.Vector3(), (p-0.5)*2);
+                col = 0x0055FF;
+                txt = "::: MEMORY CHECK :::";
             } else if (t < 3.5) {
-                const p = (t - 1.5) / 2.0;
-                const dbTarget = new THREE.Vector3(100, 70, -70);
-                if(p < 0.5) targetPos.lerpVectors(new THREE.Vector3(), dbTarget, p * 2);
-                else targetPos.lerpVectors(dbTarget, new THREE.Vector3(), (p - 0.5) * 2);
-                status = "::: REFERENCING MEMORY & EMOTION :::";
-                colorHex = 0x0055FF;
-            } else if (t < 4.5) {
-                const p = (t - 3.5) / 1.0;
-                const coefTarget = new THREE.Vector3(75, 0, 0);
-                targetPos.lerpVectors(new THREE.Vector3(), coefTarget, p);
-                status = "/// CALCULATING VECTOR (COEFFICIENTS) ///";
-                colorHex = 0x00CCFF;
+                let p = (t-2.5);
+                target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(70,0,0), p);
+                col = 0x00CCFF;
+                txt = "/// PROCESSING ///";
             } else {
-                const p = (t - 4.5) / 1.5;
-                targetPos.lerpVectors(new THREE.Vector3(75, 0, 0), new THREE.Vector3(280, 0, 0), p);
-                status = "!!! ACTION EXECUTED !!!";
-                colorHex = 0xFF3300;
+                let p = (t-3.5)/1.5;
+                target.lerpVectors(new THREE.Vector3(70,0,0), new THREE.Vector3(250,0,0), p);
+                col = 0xFF3300;
+                txt = "!!! ACTION !!!";
             }
 
-            pulse.position.copy(targetPos);
-            pulse.material.color.setHex(colorHex);
-            pulseGlow.material.color.setHex(colorHex);
-            flowText.textContent = status;
-            flowText.style.color = '#' + new THREE.Color(colorHex).getHexString();
-            flowText.style.textShadow = `0 0 25px #${new THREE.Color(colorHex).getHexString()}`;
+            pulse.position.copy(target);
+            pulse.material.color.setHex(col);
+            pulseSpr.material.color.setHex(col);
+            flowText.innerText = txt;
+            flowText.style.color = '#' + col.toString(16).padStart(6,'0');
 
-            for(let i=trails.length-1; i>0; i--) {
-                trails[i].position.copy(trails[i-1].position);
-                trails[i].material.color.setHex(colorHex);
-            }
-            trails[0].position.copy(targetPos);
-
-            composer.render();
+            renderer.render(scene, camera);
         }
+        animate();
 
         // Interaction
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         
-        window.addEventListener('pointerdown', (e) => {
+        window.addEventListener('mousedown', function(e){
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
-            
-            const intersects = raycaster.intersectObjects(interactables, true);
-            if(intersects.length > 0) {
-                let target = intersects[0].object;
-                while(!target.userData.data && target.parent) target = target.parent;
-                if(target.userData.data) showPanel(target.userData);
-            } else hidePanel();
+            const hits = raycaster.intersectObjects(interactables);
+            if(hits.length > 0) {
+                showPanel(hits[0].object.userData);
+            }
         });
 
-        const panel = document.getElementById('panel');
-        const pTag = document.getElementById('p-tag');
-        const pTitle = document.getElementById('p-title');
-        const pDesc = document.getElementById('p-desc');
-        const pRole = document.getElementById('p-role');
-        const pConn = document.getElementById('p-conn');
-        
         function showPanel(ud) {
-            const d = ud.data;
-            pTag.textContent = ud.type;
-            pTitle.textContent = d.name;
-            pTitle.style.color = '#' + new THREE.Color(d.color).getHexString();
-            pDesc.innerText = d.desc;
-            pRole.textContent = d.role || "System Component";
-            pConn.textContent = "Synced";
-            panel.classList.add('active');
+            const p = document.getElementById('panel');
+            document.getElementById('p-title').innerText = ud.data.name || ud.data.id;
+            document.getElementById('p-desc').innerText = ud.data.desc;
+            document.getElementById('p-type').innerText = ud.type;
+            p.classList.add('active');
         }
-        function hidePanel() {
-            panel.classList.remove('active');
-        }
-        document.getElementById('p-close').addEventListener('click', hidePanel);
 
-        window.addEventListener('resize', () => {
+        window.addEventListener('resize', function(){
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
-            composer.setSize(window.innerWidth, window.innerHeight);
         });
 
-        animate();
     </script>
 </body>
 </html>
