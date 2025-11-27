@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonalia System: Neural Safe</title>
+    <title>Sonalia System: Neural Logic</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Consolas', sans-serif; }
         canvas { display: block; }
 
+        /* ローディング画面 */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s;
+            transition: opacity 1s;
         }
-        .loader-text { color: #00ffff; font-size: 14px; letter-spacing: 3px; animation: blink 1s infinite; }
+        .loader-text { color: #00ffff; font-size: 14px; letter-spacing: 3px; animation: blink 1s infinite; margin-bottom: 20px; }
         @keyframes blink { 50% { opacity: 0.5; } }
         
-        #debug-log {
-            color: red; font-size: 12px; margin-top: 20px; text-align: center; display: none; border: 1px solid red; padding: 10px;
-        }
+        /* エラーログ */
+        #error-display { color: #ff3333; font-size: 12px; border: 1px solid #ff3333; padding: 10px; display: none; }
 
+        /* UI */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #hud-left { position: absolute; top: 20px; left: 20px; }
         .hud-line { color: rgba(0, 255, 255, 0.7); font-size: 12px; margin-bottom: 5px; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
@@ -29,54 +30,60 @@
             color: #fff; font-size: 16px; text-shadow: 0 0 10px currentColor; font-family: monospace;
         }
 
+        /* パネル */
         #panel {
             position: absolute; top: 0; right: 0; width: 350px; height: 100%;
-            background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333;
+            background: rgba(10, 15, 20, 0.9); border-left: 1px solid #333;
             transform: translateX(100%); transition: 0.3s; pointer-events: auto;
-            color: #eee; padding: 30px; box-sizing: border-box;
+            color: #eee; padding: 30px; box-sizing: border-box; backdrop-filter: blur(10px);
         }
         #panel.active { transform: translateX(0); }
-        h2 { color: #00ffff; border-bottom: 1px solid #444; padding-bottom: 10px; }
+        h2 { color: #00ffff; border-bottom: 1px solid #444; padding-bottom: 10px; margin-top: 0; }
         .close-btn { position: absolute; top: 10px; right: 20px; cursor: pointer; font-size: 24px; }
     </style>
 
-    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
-    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text">INITIALIZING NEURAL FABRIC...</div>
-        <div id="debug-log"></div>
+        <div class="loader-text">INITIALIZING NEURAL NETWORK...</div>
+        <div id="error-display"></div>
     </div>
 
     <div id="ui-layer">
         <div id="hud-left">
             <div class="hud-line">SONALIA CORE: ONLINE</div>
-            <div class="hud-line">ARCHITECTURE: NEURAL MESH</div>
+            <div class="hud-line">ARCHITECTURE: NEURAL MESH v4.0</div>
         </div>
         <div id="logic-flow">WAITING...</div>
     </div>
 
     <div id="panel">
-        <div class="close-btn" onclick="document.getElementById('panel').classList.remove('active')">×</div>
+        <div class="close-btn" id="p-close">×</div>
         <h2 id="p-title">TITLE</h2>
         <div style="font-size:10px; background:#fff; color:#000; display:inline-block; padding:2px 5px; margin-bottom:15px;" id="p-type">TYPE</div>
         <p id="p-desc" style="font-size:13px; line-height:1.6;">Description</p>
     </div>
 
-    <script>
-        // エラー捕捉
-        window.onerror = function(msg, url, line) {
-            const d = document.getElementById('debug-log');
-            d.style.display = 'block';
-            d.innerHTML += "Error: " + msg + "<br>";
-        };
+    <script type="module">
+        // 修正点: ここで OrbitControls を明示的にインポートすることでエラーを回避
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
-        // ライブラリチェック
-        if (typeof THREE === 'undefined') {
-            throw new Error("Three.js not loaded.");
-        }
+        // エラーハンドリング
+        window.onerror = function(msg) {
+            const el = document.getElementById('error-display');
+            el.style.display = 'block';
+            el.innerText = "Error: " + msg;
+        };
 
         // ==========================================
         // DATA
@@ -117,27 +124,16 @@
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        // OrbitControls Fix check
-        let controls;
-        if(THREE.OrbitControls) {
-            controls = new THREE.OrbitControls(camera, renderer.domElement);
-        } else {
-            // Fallback manually just in case
-            console.warn("OrbitControls manual check");
-            if(window.THREE && window.THREE.OrbitControls) {
-                 controls = new THREE.OrbitControls(camera, renderer.domElement);
-            }
-        }
-        if(controls) {
-            controls.enableDamping = true;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.5;
-        }
+        // 修正点: THREE.OrbitControls ではなく、インポートした OrbitControls を使う
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.5;
 
-        // Glow Texture Generator
+        // Glow Texture
         function createGlowTexture() {
             const c = document.createElement('canvas'); c.width=64; c.height=64;
             const ctx = c.getContext('2d');
@@ -150,7 +146,7 @@
         }
         const glowTex = createGlowTexture();
         const interactables = [];
-        const allNodes = []; // For connections
+        const allNodes = [];
 
         const mainGroup = new THREE.Group();
         scene.add(mainGroup);
@@ -159,11 +155,20 @@
         // OBJECTS
         // ==========================================
 
-        // A. OS CORE
+        // A. OS CORE (Neural Brain)
         const osGroup = new THREE.Group();
         mainGroup.add(osGroup);
         // Wireframe Brain
-        const coreGeo = new THREE.IcosahedronGeometry(15, 1);
+        const coreGeo = new THREE.IcosahedronGeometry(15, 2);
+        const posAttr = coreGeo.attributes.position;
+        // Organic Noise
+        for(let i=0; i<posAttr.count; i++){
+            const x = posAttr.getX(i);
+            const y = posAttr.getY(i);
+            const z = posAttr.getZ(i);
+            const noise = 1 + Math.random()*0.1;
+            posAttr.setXYZ(i, x*noise, y*noise, z*noise);
+        }
         const coreMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, wireframe: true, transparent: true, opacity: 0.15 });
         const core = new THREE.Mesh(coreGeo, coreMat);
         osGroup.add(core);
@@ -181,7 +186,6 @@
             mesh.position.copy(pos);
             mesh.userData = { type: 'OS', data: d };
             
-            // Glow Sprite
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
             spr.scale.set(25,25,1);
             mesh.add(spr);
@@ -222,30 +226,41 @@
         mainGroup.add(dbGroup);
 
         DATA.DB.forEach(d => {
-            const count = 100;
-            const geo = new THREE.Geometry(); 
+            const count = 120;
+            const pPos = [];
+            const pCol = [];
+            const baseCol = new THREE.Color(d.color);
+            
             for(let i=0; i<count; i++) {
-                const spread = 40;
+                const spread = 45;
                 const v = new THREE.Vector3(
                     d.pos[0] + (Math.random()-0.5)*spread,
                     d.pos[1] + (Math.random()-0.5)*spread,
                     d.pos[2] + (Math.random()-0.5)*spread
                 );
-                geo.vertices.push(v);
-                if(Math.random()>0.92) allNodes.push({ pos: v, color: new THREE.Color(d.color), group:'DB' });
+                pPos.push(v.x, v.y, v.z);
+                pCol.push(baseCol.r, baseCol.g, baseCol.b);
+
+                // 一部を接続用に登録
+                if(Math.random()>0.9) allNodes.push({ pos: v, color: baseCol, group:'DB' });
             }
-            const mat = new THREE.PointsMaterial({ color: d.color, size: 2, map: glowTex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
+            
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
+            geo.setAttribute('color', new THREE.Float32BufferAttribute(pCol, 3));
+            const mat = new THREE.PointsMaterial({ size: 2, map: glowTex, vertexColors: true, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
             const pts = new THREE.Points(geo, mat);
             dbGroup.add(pts);
 
+            // Hitbox
             const box = new THREE.Mesh(new THREE.BoxGeometry(50,50,50), new THREE.MeshBasicMaterial({visible:false}));
             box.position.set(d.pos[0], d.pos[1], d.pos[2]);
             box.userData = { type: 'DB', data: d };
             interactables.push(box);
         });
 
-        // D. NEURAL CONNECTIONS (KamuiOS Style)
-        const lineGeo = new THREE.Geometry();
+        // D. NEURAL SYNAPSES (Lines)
+        const linePos = [];
         const lineColors = [];
         
         for(let i=0; i<allNodes.length; i++) {
@@ -253,17 +268,21 @@
                 const n1 = allNodes[i];
                 const n2 = allNodes[j];
                 const dist = n1.pos.distanceTo(n2.pos);
-                // 距離が近く、かつ異なるグループ間などを繋ぐ
-                if(dist < 90 && (dist < 25 || n1.group !== n2.group)) {
-                    lineGeo.vertices.push(n1.pos);
-                    lineGeo.vertices.push(n2.pos);
-                    lineColors.push(n1.color);
-                    lineColors.push(n2.color);
+                
+                // 距離による接続判定 + グループまたぎを優先
+                if(dist < 85 && (dist < 30 || n1.group !== n2.group)) {
+                    linePos.push(n1.pos.x, n1.pos.y, n1.pos.z);
+                    linePos.push(n2.pos.x, n2.pos.y, n2.pos.z);
+                    lineColors.push(n1.color.r, n1.color.g, n1.color.b);
+                    lineColors.push(n2.color.r, n2.color.g, n2.color.b);
                 }
             }
         }
-        lineGeo.colors = lineColors;
-        const lineMat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending });
+        
+        const lineGeo = new THREE.BufferGeometry();
+        lineGeo.setAttribute('position', new THREE.Float32BufferAttribute(linePos, 3));
+        lineGeo.setAttribute('color', new THREE.Float32BufferAttribute(lineColors, 3));
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
         const synapses = new THREE.LineSegments(lineGeo, lineMat);
         mainGroup.add(synapses);
 
@@ -282,19 +301,21 @@
         
         // Remove Loader
         setTimeout(function(){
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(function(){ document.getElementById('loader').style.display='none'; }, 500);
-        }, 1000);
+            const l = document.getElementById('loader');
+            if(l) { l.style.opacity = 0; setTimeout(()=>l.style.display='none', 500); }
+        }, 1500);
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
             if(controls) controls.update();
 
-            // Orgnaic Motion
+            // Organic Motion
             osGroup.rotation.y = Math.sin(time*0.2)*0.2;
-            osGroup.scale.setScalar(1 + Math.sin(time*3)*0.02); // Heartbeat
-            
+            const beat = 1 + Math.sin(time*2.5)*0.02;
+            osGroup.scale.set(beat, beat, beat);
+            synapses.scale.set(beat, beat, beat); // Lines move with brain
+
             coefGroup.rotation.y = time * -0.15;
             coefMeshes.forEach((m,i) => {
                 m.rotation.x += 0.02; 
@@ -302,7 +323,7 @@
             });
             synapses.rotation.y = Math.sin(time*0.1)*0.05;
 
-            // Loop Logic
+            // Logic Loop
             const t = time % 6.0;
             let target = new THREE.Vector3();
             let col = 0xffffff;
@@ -334,8 +355,10 @@
             pulse.position.copy(target);
             pulse.material.color.setHex(col);
             pulseSpr.material.color.setHex(col);
-            flowText.innerText = txt;
-            flowText.style.color = '#' + col.toString(16).padStart(6,'0');
+            if(flowText) {
+                flowText.innerText = txt;
+                flowText.style.color = '#' + col.toString(16).padStart(6,'0');
+            }
 
             renderer.render(scene, camera);
         }
@@ -352,15 +375,23 @@
             const hits = raycaster.intersectObjects(interactables);
             if(hits.length > 0) {
                 showPanel(hits[0].object.userData);
+            } else {
+                hidePanel();
             }
         });
 
+        const panel = document.getElementById('panel');
+        const pClose = document.getElementById('p-close');
+        if(pClose) pClose.addEventListener('click', hidePanel);
+
         function showPanel(ud) {
-            const p = document.getElementById('panel');
             document.getElementById('p-title').innerText = ud.data.name || ud.data.id;
             document.getElementById('p-desc').innerText = ud.data.desc;
             document.getElementById('p-type').innerText = ud.type;
-            p.classList.add('active');
+            panel.classList.add('active');
+        }
+        function hidePanel() {
+            panel.classList.remove('active');
         }
 
         window.addEventListener('resize', function(){
