@@ -3,12 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sonalia System: Universal</title>
+    <title>Sonalia System: Neural Safe</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Consolas', sans-serif; }
         canvas { display: block; }
 
-        /* ローディング画面 */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -17,22 +16,19 @@
         .loader-text { color: #00ffff; font-size: 14px; letter-spacing: 3px; animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
         
-        /* エラーログ表示（万が一のため） */
         #debug-log {
             color: red; font-size: 12px; margin-top: 20px; text-align: center; display: none; border: 1px solid red; padding: 10px;
         }
 
-        /* UIレイヤー */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
         #hud-left { position: absolute; top: 20px; left: 20px; }
         .hud-line { color: rgba(0, 255, 255, 0.7); font-size: 12px; margin-bottom: 5px; text-shadow: 0 0 5px rgba(0,255,255,0.5); }
         
         #logic-flow {
             position: absolute; bottom: 40px; width: 100%; text-align: center;
-            color: #fff; font-size: 16px; text-shadow: 0 0 10px currentColor;
+            color: #fff; font-size: 16px; text-shadow: 0 0 10px currentColor; font-family: monospace;
         }
 
-        /* 詳細パネル */
         #panel {
             position: absolute; top: 0; right: 0; width: 350px; height: 100%;
             background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333;
@@ -44,20 +40,20 @@
         .close-btn { position: absolute; top: 10px; right: 20px; cursor: pointer; font-size: 24px; }
     </style>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
     <div id="loader">
-        <div class="loader-text">INITIALIZING SYSTEM (COMPATIBILITY MODE)...</div>
+        <div class="loader-text">INITIALIZING NEURAL FABRIC...</div>
         <div id="debug-log"></div>
     </div>
 
     <div id="ui-layer">
         <div id="hud-left">
             <div class="hud-line">SONALIA CORE: ONLINE</div>
-            <div class="hud-line">RENDERER: LEGACY STABLE</div>
+            <div class="hud-line">ARCHITECTURE: NEURAL MESH</div>
         </div>
         <div id="logic-flow">WAITING...</div>
     </div>
@@ -77,15 +73,13 @@
             d.innerHTML += "Error: " + msg + "<br>";
         };
 
-        // Three.jsが読み込まれたかチェック
+        // ライブラリチェック
         if (typeof THREE === 'undefined') {
-            document.getElementById('debug-log').style.display = 'block';
-            document.getElementById('debug-log').innerHTML = "FAILED TO LOAD THREE.JS LIBRARY.<br>Please check your internet connection.";
-            throw new Error("Three.js not loaded");
+            throw new Error("Three.js not loaded.");
         }
 
         // ==========================================
-        // DATA DEFINITION
+        // DATA
         // ==========================================
         const DATA = {
             OS: [
@@ -113,25 +107,37 @@
         };
 
         // ==========================================
-        // SCENE SETUP
+        // SCENE
         // ==========================================
         const scene = new THREE.Scene();
         scene.fog = new THREE.FogExp2(0x000000, 0.002);
 
         const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
-        camera.position.set(0, 40, 250);
+        camera.position.set(0, 40, 260);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
         document.body.appendChild(renderer.domElement);
 
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
+        // OrbitControls Fix check
+        let controls;
+        if(THREE.OrbitControls) {
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+        } else {
+            // Fallback manually just in case
+            console.warn("OrbitControls manual check");
+            if(window.THREE && window.THREE.OrbitControls) {
+                 controls = new THREE.OrbitControls(camera, renderer.domElement);
+            }
+        }
+        if(controls) {
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+        }
 
-        // グローテクスチャ生成
+        // Glow Texture Generator
         function createGlowTexture() {
             const c = document.createElement('canvas'); c.width=64; c.height=64;
             const ctx = c.getContext('2d');
@@ -144,7 +150,7 @@
         }
         const glowTex = createGlowTexture();
         const interactables = [];
-        const allNodes = [];
+        const allNodes = []; // For connections
 
         const mainGroup = new THREE.Group();
         scene.add(mainGroup);
@@ -153,11 +159,10 @@
         // OBJECTS
         // ==========================================
 
-        // A. OS Core
+        // A. OS CORE
         const osGroup = new THREE.Group();
         mainGroup.add(osGroup);
-        
-        // 脳のワイヤー
+        // Wireframe Brain
         const coreGeo = new THREE.IcosahedronGeometry(15, 1);
         const coreMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, wireframe: true, transparent: true, opacity: 0.15 });
         const core = new THREE.Mesh(coreGeo, coreMat);
@@ -176,9 +181,9 @@
             mesh.position.copy(pos);
             mesh.userData = { type: 'OS', data: d };
             
-            // 光るスプライト（Bloomの代わり）
+            // Glow Sprite
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(20,20,1);
+            spr.scale.set(25,25,1);
             mesh.add(spr);
 
             osGroup.add(mesh);
@@ -186,7 +191,7 @@
             allNodes.push({ pos: pos, color: new THREE.Color(d.color), group:'OS' });
         });
 
-        // B. Coefficients
+        // B. COEFFICIENTS
         const coefGroup = new THREE.Group();
         mainGroup.add(coefGroup);
         const coefMeshes = [];
@@ -203,7 +208,7 @@
             mesh.userData = { type: 'COEF', data: d };
 
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(30,30,1);
+            spr.scale.set(35,35,1);
             mesh.add(spr);
 
             coefGroup.add(mesh);
@@ -212,13 +217,13 @@
             allNodes.push({ pos: pos, color: new THREE.Color(d.color), group:'COEF' });
         });
 
-        // C. DB Clouds
+        // C. DB CLOUDS
         const dbGroup = new THREE.Group();
         mainGroup.add(dbGroup);
 
         DATA.DB.forEach(d => {
-            const count = 150;
-            const geo = new THREE.Geometry(); // Legacy compatible geometry
+            const count = 100;
+            const geo = new THREE.Geometry(); 
             for(let i=0; i<count; i++) {
                 const spread = 40;
                 const v = new THREE.Vector3(
@@ -227,7 +232,7 @@
                     d.pos[2] + (Math.random()-0.5)*spread
                 );
                 geo.vertices.push(v);
-                if(Math.random()>0.9) allNodes.push({ pos: v, color: new THREE.Color(d.color), group:'DB' });
+                if(Math.random()>0.92) allNodes.push({ pos: v, color: new THREE.Color(d.color), group:'DB' });
             }
             const mat = new THREE.PointsMaterial({ color: d.color, size: 2, map: glowTex, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending, depthWrite: false });
             const pts = new THREE.Points(geo, mat);
@@ -239,18 +244,17 @@
             interactables.push(box);
         });
 
-        // D. Synapse Connections (Lines)
+        // D. NEURAL CONNECTIONS (KamuiOS Style)
         const lineGeo = new THREE.Geometry();
         const lineColors = [];
         
-        // 簡易的な接続生成
         for(let i=0; i<allNodes.length; i++) {
             for(let j=i+1; j<allNodes.length; j++) {
                 const n1 = allNodes[i];
                 const n2 = allNodes[j];
                 const dist = n1.pos.distanceTo(n2.pos);
-                // 距離が近く、かつOS-COEF間などをつなぐ
-                if(dist < 80 && (dist < 25 || n1.group !== n2.group)) {
+                // 距離が近く、かつ異なるグループ間などを繋ぐ
+                if(dist < 90 && (dist < 25 || n1.group !== n2.group)) {
                     lineGeo.vertices.push(n1.pos);
                     lineGeo.vertices.push(n2.pos);
                     lineColors.push(n1.color);
@@ -259,15 +263,14 @@
             }
         }
         lineGeo.colors = lineColors;
-        const lineMat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: THREE.VertexColors, transparent: true, opacity: 0.1, blending: THREE.AdditiveBlending });
         const synapses = new THREE.LineSegments(lineGeo, lineMat);
         mainGroup.add(synapses);
 
-
-        // E. Logic Pulse
+        // E. LOGIC PULSE
         const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
         const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
-        pulseSpr.scale.set(15,15,1);
+        pulseSpr.scale.set(20,20,1);
         pulse.add(pulseSpr);
         scene.add(pulse);
 
@@ -277,7 +280,7 @@
         const clock = new THREE.Clock();
         const flowText = document.getElementById('logic-flow');
         
-        // ローディング消去
+        // Remove Loader
         setTimeout(function(){
             document.getElementById('loader').style.opacity = 0;
             setTimeout(function(){ document.getElementById('loader').style.display='none'; }, 500);
@@ -286,10 +289,12 @@
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-            controls.update();
+            if(controls) controls.update();
 
-            // 動き
+            // Orgnaic Motion
             osGroup.rotation.y = Math.sin(time*0.2)*0.2;
+            osGroup.scale.setScalar(1 + Math.sin(time*3)*0.02); // Heartbeat
+            
             coefGroup.rotation.y = time * -0.15;
             coefMeshes.forEach((m,i) => {
                 m.rotation.x += 0.02; 
@@ -297,33 +302,33 @@
             });
             synapses.rotation.y = Math.sin(time*0.1)*0.05;
 
-            // パルスロジック
-            const t = time % 5.0;
+            // Loop Logic
+            const t = time % 6.0;
             let target = new THREE.Vector3();
             let col = 0xffffff;
             let txt = "";
 
-            if (t < 1.0) {
-                let p = t;
-                target.set(0, 150*(1-p), 100*(1-p));
-                txt = ">>> INPUT >>>";
-            } else if (t < 2.5) {
-                let p = (t-1.0)/1.5;
+            if (t < 1.5) {
+                let p = t/1.5;
+                target.set(0, 160*(1-p), 120*(1-p));
+                txt = ">>> INPUT SIGNAL >>>";
+            } else if (t < 3.5) {
+                let p = (t-1.5)/2.0;
                 let db = new THREE.Vector3(90, 60, -60);
                 if(p<0.5) target.lerpVectors(new THREE.Vector3(), db, p*2);
                 else target.lerpVectors(db, new THREE.Vector3(), (p-0.5)*2);
                 col = 0x0055FF;
-                txt = "::: MEMORY CHECK :::";
-            } else if (t < 3.5) {
-                let p = (t-2.5);
+                txt = "::: NEURAL MEMORY ACCESS :::";
+            } else if (t < 4.5) {
+                let p = (t-3.5);
                 target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(70,0,0), p);
                 col = 0x00CCFF;
-                txt = "/// PROCESSING ///";
+                txt = "/// PROCESSING VECTOR ///";
             } else {
-                let p = (t-3.5)/1.5;
+                let p = (t-4.5)/1.5;
                 target.lerpVectors(new THREE.Vector3(70,0,0), new THREE.Vector3(250,0,0), p);
                 col = 0xFF3300;
-                txt = "!!! ACTION !!!";
+                txt = "!!! ACTION OUTPUT !!!";
             }
 
             pulse.position.copy(target);
