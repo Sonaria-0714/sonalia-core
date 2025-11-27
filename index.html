@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sonalia System: Neural Fabric</title>
     <style>
-        /* --- 没入感を高めるスタイル --- */
         body { margin: 0; overflow: hidden; background-color: #010103; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
         canvas { display: block; width: 100vw; height: 100vh; }
 
@@ -15,7 +14,6 @@
             display: flex; flex-direction: column; justify-content: space-between; z-index: 10;
         }
 
-        /* 左上：システムモニタ */
         #hud-left { padding: 30px; }
         .hud-title {
             color: #fff; font-size: 14px; letter-spacing: 3px; border-left: 3px solid #00ffff;
@@ -28,19 +26,16 @@
         }
         .status-dot { width: 8px; height: 8px; background: #00ff00; border-radius: 50%; box-shadow: 0 0 5px #00ff00; }
 
-        /* 中央下：ロジックフロー表示 */
         #logic-flow {
             text-align: center; padding-bottom: 40px;
             font-family: 'Consolas', monospace; font-size: 16px; letter-spacing: 1px;
             text-shadow: 0 0 15px currentColor; transition: color 0.3s;
         }
 
-        /* 右側：詳細パネル（グラスモーフィズム） */
         #panel {
             position: absolute; top: 0; right: 0; width: 400px; height: 100%;
-            background: rgba(10, 15, 25, 0.7); /* 少し暗く */
-            backdrop-filter: blur(25px); /* ぼかし強化 */
-            -webkit-backdrop-filter: blur(25px);
+            background: rgba(10, 15, 25, 0.7);
+            backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
             border-left: 1px solid rgba(255, 255, 255, 0.15);
             transform: translateX(100%); transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
             pointer-events: auto; display: flex; flex-direction: column;
@@ -56,7 +51,6 @@
         h2 { margin: 0 0 20px 0; font-size: 28px; font-weight: 300; letter-spacing: 1px; color: #fff; text-shadow: 0 0 20px rgba(255,255,255,0.3); }
         p { font-size: 14px; line-height: 1.8; color: #ccc; margin-bottom: 30px; font-weight: 400; }
         
-        /* データ可視化風の装飾 */
         .data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px; }
         .data-item { background: rgba(255,255,255,0.05); padding: 10px; border-radius: 4px; }
         .data-label { font-size: 10px; color: #888; display: block; margin-bottom: 3px; }
@@ -75,29 +69,50 @@
             display: flex; align-items: center; justify-content: center; flex-direction: column;
             transition: opacity 1s ease-out; pointer-events: none;
         }
-        .loader-text { color: #00ffff; font-family: monospace; letter-spacing: 5px; animation: blink 1s infinite; }
+        .loader-text { color: #00ffff; font-family: monospace; letter-spacing: 5px; animation: blink 1s infinite; margin-bottom: 20px; }
         @keyframes blink { 50% { opacity: 0.5; } }
+        
+        /* エラー表示エリア（普段は隠れている） */
+        #error-msg {
+            color: #ff3333; font-family: monospace; font-size: 12px; max-width: 80%;
+            background: rgba(20,0,0,0.8); padding: 10px; border: 1px solid red; display: none;
+        }
     </style>
+
+    <script>
+        window.onerror = function(msg, url, line, col, error) {
+            const el = document.getElementById('error-msg');
+            const txt = document.getElementById('loading-txt');
+            if(el) {
+                el.style.display = 'block';
+                el.innerHTML = "SYSTEM ERROR DETECTED:<br>" + msg;
+                if(txt) txt.textContent = "CONNECTION FAILED";
+            }
+        };
+    </script>
 
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+                "three": "https://esm.sh/three@0.160.0",
+                "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
             }
         }
     </script>
 </head>
 <body>
 
-    <div id="loader"><div class="loader-text">BUILDING NEURAL PATHWAYS...</div></div>
+    <div id="loader">
+        <div class="loader-text" id="loading-txt">BUILDING NEURAL PATHWAYS...</div>
+        <div id="error-msg"></div>
+    </div>
 
     <div id="ui-layer">
         <div id="hud-left">
             <div class="hud-title">Sonalia Logic Core</div>
             <div class="hud-row"><div class="status-dot"></div> SYSTEM ONLINE</div>
-            <div class="hud-row">ARCHITECTURE: NEURAL FABRIC v3.0</div>
-            <div class="hud-row">MODE: FULL SYNAPTIC CONNECTION</div>
+            <div class="hud-row">ARCHITECTURE: NEURAL FABRIC v3.1</div>
+            <div class="hud-row">MODE: STABLE CONNECTION</div>
         </div>
         <div id="logic-flow">WAITING FOR SIGNAL...</div>
     </div>
@@ -108,7 +123,6 @@
             <span class="tag" id="p-tag">CATEGORY</span>
             <h2 id="p-title">Title</h2>
             <p id="p-desc">Description text here.</p>
-            
             <div class="data-grid">
                 <div class="data-item">
                     <span class="data-label">ROLE</span>
@@ -129,9 +143,7 @@
         import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
         import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 
-        // ==========================================
-        // 1. SONALIA DATA DEFINITION
-        // ==========================================
+        // 定義データ
         const DATA = {
             OS: [
                 { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "【危険 ↔ 安全】\n最優先でリスクを回避し、生命維持と安全確保を図る判断基準。", role: "Risk Management" },
@@ -161,83 +173,78 @@
             ]
         };
 
-        // ==========================================
-        // 2. HIGH-END SCENE SETUP
-        // ==========================================
+        // シーン設定
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x010103, 0.002); // より深い黒
+        scene.fog = new THREE.FogExp2(0x010103, 0.002);
 
         const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 3000);
         camera.position.set(0, 40, 280);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); 
-        renderer.toneMapping = THREE.ACESFilmicToneMapping; // 映画のようなトーンマッピング
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.2;
         document.body.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;
-        controls.autoRotate = true; // ゆっくり回転させる
+        controls.autoRotate = true;
         controls.autoRotateSpeed = 0.3;
 
-        // --- POST-PROCESSING (THE BLOOM) ---
+        // Post-Processing
         const renderScene = new RenderPass(scene, camera);
-        // ブルームを少し強めに調整
         const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 1.8, 0.5, 0.9);
-        
         const composer = new EffectComposer(renderer);
         composer.addPass(renderScene);
         composer.addPass(bloomPass);
 
-        // マテリアルヘルパー
+        // マテリアル
         function createGlowMat(colorHex, opacity = 1.0) {
             return new THREE.MeshBasicMaterial({ 
-                color: new THREE.Color(colorHex).multiplyScalar(2.0), // 強度2倍で発光
-                transparent: true, 
-                opacity: opacity,
-                blending: THREE.AdditiveBlending,
-                depthWrite: false // 重なった時に光が混ざるようにする
+                color: new THREE.Color(colorHex).multiplyScalar(2.0),
+                transparent: true, opacity: opacity,
+                blending: THREE.AdditiveBlending, depthWrite: false
             });
         }
         function createWireMat(colorHex, opacity = 0.3) {
              return new THREE.LineBasicMaterial({
                 color: new THREE.Color(colorHex).multiplyScalar(1.5),
-                transparent: true,
-                opacity: opacity,
-                blending: THREE.AdditiveBlending
+                transparent: true, opacity: opacity, blending: THREE.AdditiveBlending
             });
+        }
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.3, 'rgba(255,255,255,0.2)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(canvas);
         }
 
         const interactables = [];
-        const allNodes = []; // 全ノードの位置を保存して接続に使う
-
-        // ==========================================
-        // 3. OBJECT GENERATION (NEURAL FABRIC)
-        // ==========================================
-        
+        const allNodes = [];
         const mainGroup = new THREE.Group();
         scene.add(mainGroup);
 
-        // A. THE BRAIN CORE (OS)
+        // オブジェクト生成
+        // A. OS Core
         const osGroup = new THREE.Group();
         mainGroup.add(osGroup);
-
-        // 脳の核（複雑なワイヤーフレーム）
         const coreGeo = new THREE.IcosahedronGeometry(18, 3);
         const pos = coreGeo.attributes.position;
         for(let i=0; i<pos.count; i++){
             const noise = 1 + Math.random()*0.15;
             pos.setXYZ(i, pos.getX(i)*noise, pos.getY(i)*noise, pos.getZ(i)*noise);
         }
-        // 内部の複雑な神経網
-        const coreMat = createWireMat(0x0088ff, 0.1);
-        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        const coreMesh = new THREE.Mesh(coreGeo, createWireMat(0x0088ff, 0.1));
         osGroup.add(coreMesh);
         
-        // 8 OS Nodes
         DATA.OS.forEach((d, i) => {
             const phi = Math.acos( -1 + ( 2 * i ) / 8 );
             const theta = Math.sqrt( 8 * Math.PI ) * phi;
@@ -247,12 +254,10 @@
             const z = r * Math.cos(phi);
             const nodePos = new THREE.Vector3(x, y, z);
 
-            // ノード
             const mesh = new THREE.Mesh(new THREE.IcosahedronGeometry(3, 1), createGlowMat(d.color));
             mesh.position.copy(nodePos);
             mesh.userData = { type: 'OS', data: d };
             
-            // グロー
             const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlowTexture(), color: d.color, blending: THREE.AdditiveBlending }));
             glow.scale.set(25, 25, 1);
             mesh.add(glow);
@@ -262,8 +267,7 @@
             allNodes.push({ pos: nodePos.clone(), color: d.color, group: 'OS' });
         });
 
-
-        // B. COEFFICIENTS (Satellites)
+        // B. Coefficients
         const coefGroup = new THREE.Group();
         mainGroup.add(coefGroup);
         const coefMeshes = [];
@@ -275,20 +279,16 @@
             const z = Math.sin(angle) * rad;
             const nodePos = new THREE.Vector3(x, 0, z);
 
-            // テクノロジー感のあるキューブ
             const geo = new THREE.BoxGeometry(5, 5, 5);
             const edges = new THREE.EdgesGeometry(geo);
             const line = new THREE.LineSegments(edges, createWireMat(d.color, 0.8));
-            
             const inner = new THREE.Mesh(new THREE.BoxGeometry(3.5,3.5,3.5), createGlowMat(d.color, 0.6));
-
             const group = new THREE.Group();
             group.add(line);
             group.add(inner);
             group.position.copy(nodePos);
             group.userData = { type: 'COEF', data: d };
 
-            // 係数用の強いグロー
             const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlowTexture(), color: d.color, blending: THREE.AdditiveBlending, opacity: 0.5 }));
             glow.scale.set(40, 40, 1);
             group.add(glow);
@@ -299,16 +299,14 @@
             allNodes.push({ pos: nodePos.clone(), color: d.color, group: 'COEF' });
         });
 
-
-        // C. DB CLOUDS (Particles)
+        // C. DB Clouds
         const dbGroup = new THREE.Group();
         mainGroup.add(dbGroup);
 
         DATA.DB.forEach(d => {
-            const pCount = 400; // 粒子数
+            const pCount = 300;
             const pGeo = new THREE.BufferGeometry();
             const pPos = [];
-            
             for(let i=0; i<pCount; i++) {
                 const spread = 50;
                 const v = new THREE.Vector3(
@@ -317,24 +315,17 @@
                     d.pos[2] + (Math.random()-0.5)*spread
                 );
                 pPos.push(v.x, v.y, v.z);
-                // 一部の粒子を接続候補に追加（全部だと重すぎるため間引く）
-                if(Math.random() > 0.95) {
-                     allNodes.push({ pos: v.clone(), color: d.color, group: 'DB' });
-                }
+                if(Math.random() > 0.95) allNodes.push({ pos: v.clone(), color: d.color, group: 'DB' });
             }
             pGeo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
             const pMat = new THREE.PointsMaterial({ 
                 color: new THREE.Color(d.color).multiplyScalar(1.5),
-                size: 2.0, 
-                transparent: true, opacity: 0.6,
-                map: createGlowTexture(),
-                blending: THREE.AdditiveBlending,
-                depthWrite: false
+                size: 2.0, transparent: true, opacity: 0.6,
+                map: createGlowTexture(), blending: THREE.AdditiveBlending, depthWrite: false
             });
             const pts = new THREE.Points(pGeo, pMat);
             dbGroup.add(pts);
 
-            // 判定用透明ボックス
             const box = new THREE.Mesh(new THREE.BoxGeometry(60,60,60), new THREE.MeshBasicMaterial({visible:false}));
             box.position.set(d.pos[0], d.pos[1], d.pos[2]);
             box.userData = { type: 'DB', data: d };
@@ -342,25 +333,20 @@
             dbGroup.add(box);
         });
 
-        // --- NEW: 神経回路（シナプス）の生成 ---
-        // すべてのノード間を、距離に応じて細い線で結ぶ
+        // Connections
         const connectionsGeo = new THREE.BufferGeometry();
         const connectionPos = [];
         const connectionColors = [];
-        const maxDist = 90; // 接続する最大距離
+        const maxDist = 90;
 
         for(let i=0; i<allNodes.length; i++) {
             for(let j=i+1; j<allNodes.length; j++) {
                 const n1 = allNodes[i];
                 const n2 = allNodes[j];
                 const dist = n1.pos.distanceTo(n2.pos);
-
-                // 近くのノード、またはグループが違うノード（OSと係数など）を優先的に繋ぐ
                 if(dist < maxDist && (dist < 30 || n1.group !== n2.group)) {
                     connectionPos.push(n1.pos.x, n1.pos.y, n1.pos.z);
                     connectionPos.push(n2.pos.x, n2.pos.y, n2.pos.z);
-                    
-                    // 色を混ぜる
                     const c1 = new THREE.Color(n1.color);
                     const c2 = new THREE.Color(n2.color);
                     connectionColors.push(c1.r, c1.g, c1.b);
@@ -372,20 +358,17 @@
         connectionsGeo.setAttribute('color', new THREE.Float32BufferAttribute(connectionColors, 3));
         
         const synapticMat = new THREE.LineBasicMaterial({
-            vertexColors: true, // 頂点カラーを使用
-            transparent: true,
-            opacity: 0.15, // 薄く表示
-            blending: THREE.AdditiveBlending
+            vertexColors: true, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending
         });
         const synapticNet = new THREE.LineSegments(connectionsGeo, synapticMat);
         mainGroup.add(synapticNet);
-        
-        // OSと係数をつなぐ太いエネルギーチューブ
+
+        // Tubes
         coefMeshes.forEach(cm => {
             const curve = new THREE.QuadraticBezierCurve3(
-                new THREE.Vector3(0,0,0), // Start (OS Core)
-                new THREE.Vector3(cm.position.x/2, 30, cm.position.z/2), // Control Point (上にあげる)
-                cm.position // End (Coefficient)
+                new THREE.Vector3(0,0,0),
+                new THREE.Vector3(cm.position.x/2, 30, cm.position.z/2),
+                cm.position
             );
             const tubeGeo = new THREE.TubeGeometry(curve, 20, 0.5, 8, false);
             const tubeMat = createGlowMat(cm.userData.data.color, 0.3);
@@ -393,63 +376,51 @@
             mainGroup.add(tube);
         });
 
-
-        // D. LOGIC PULSE (The Energy Ball)
+        // Pulse
         const pulse = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: 0xffffff }));
         const pulseGlow = new THREE.Sprite(new THREE.SpriteMaterial({map: createGlowTexture(), color: 0xffffff, blending: THREE.AdditiveBlending}));
         pulseGlow.scale.set(15,15,1);
         pulse.add(pulseGlow);
         scene.add(pulse);
-        // トレイル
-        const trailLength = 30;
+        
         const trails = [];
-        for(let i=0; i<trailLength; i++) {
-            const m = new THREE.Mesh(new THREE.SphereGeometry(2 * (1 - i/trailLength)), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4/(i*0.1+1) }));
+        for(let i=0; i<30; i++) {
+            const m = new THREE.Mesh(new THREE.SphereGeometry(2 * (1 - i/30)), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4/(i*0.1+1) }));
             scene.add(m);
             trails.push(m);
         }
 
-        // ==========================================
-        // 4. ANIMATION & LOGIC
-        // ==========================================
-        
+        // Logic Loop
         const clock = new THREE.Clock();
         const flowText = document.getElementById('logic-flow');
         const loader = document.getElementById('loader');
 
+        // ローディング完了処理
         setTimeout(() => {
-            loader.style.opacity = 0;
-            setTimeout(() => { loader.style.display = 'none'; }, 1000);
-        }, 2500); // ローディング時間を少し長く
+            if(loader) {
+                loader.style.opacity = 0;
+                setTimeout(() => { loader.style.display = 'none'; }, 1000);
+            }
+        }, 1500);
 
         function animate() {
             requestAnimationFrame(animate);
             const time = clock.getElapsedTime();
-
             controls.update();
 
-            // 1. 脳の鼓動 (Pulse)
             const heartbeat = 1 + Math.sin(time * 2.5) * 0.03 + Math.sin(time * 8) * 0.01;
             osGroup.scale.set(heartbeat, heartbeat, heartbeat);
-            // シナプスネットワークも連動して動かす
             synapticNet.scale.set(heartbeat, heartbeat, heartbeat);
 
-            // 2. 係数の回転
             coefMeshes.forEach((mesh, i) => {
                 mesh.rotation.x += 0.01 + i*0.001;
                 mesh.rotation.z += 0.02;
-                // 上下動
                 mesh.position.y = Math.sin(time + i) * 5;
             });
-
-            // 3. DBの揺らぎ
             dbGroup.rotation.y = Math.sin(time * 0.1) * 0.05;
-            synapticNet.rotation.y = Math.sin(time * 0.05) * 0.02; // シナプスも揺らす
+            synapticNet.rotation.y = Math.sin(time * 0.05) * 0.02;
 
-            // 4. SONALIA LOOP LOGIC
-            const loopDuration = 6.0; // 周期を少し長く
-            const t = time % loopDuration;
-            
+            const t = time % 6.0;
             let targetPos = new THREE.Vector3();
             let status = "";
             let colorHex = 0xffffff;
@@ -482,7 +453,6 @@
             pulse.position.copy(targetPos);
             pulse.material.color.setHex(colorHex);
             pulseGlow.material.color.setHex(colorHex);
-            
             flowText.textContent = status;
             flowText.style.color = '#' + new THREE.Color(colorHex).getHexString();
             flowText.style.textShadow = `0 0 25px #${new THREE.Color(colorHex).getHexString()}`;
@@ -496,9 +466,7 @@
             composer.render();
         }
 
-        // ==========================================
-        // 5. INTERACTION
-        // ==========================================
+        // Interaction
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
         
@@ -510,15 +478,9 @@
             const intersects = raycaster.intersectObjects(interactables, true);
             if(intersects.length > 0) {
                 let target = intersects[0].object;
-                while(!target.userData.data && target.parent) {
-                    target = target.parent;
-                }
-                if(target.userData.data) {
-                    showPanel(target.userData);
-                }
-            } else {
-                hidePanel();
-            }
+                while(!target.userData.data && target.parent) target = target.parent;
+                if(target.userData.data) showPanel(target.userData);
+            } else hidePanel();
         });
 
         const panel = document.getElementById('panel');
@@ -526,6 +488,7 @@
         const pTitle = document.getElementById('p-title');
         const pDesc = document.getElementById('p-desc');
         const pRole = document.getElementById('p-role');
+        const pConn = document.getElementById('p-conn');
         
         function showPanel(ud) {
             const d = ud.data;
@@ -534,25 +497,13 @@
             pTitle.style.color = '#' + new THREE.Color(d.color).getHexString();
             pDesc.innerText = d.desc;
             pRole.textContent = d.role || "System Component";
+            pConn.textContent = "Synced";
             panel.classList.add('active');
         }
         function hidePanel() {
             panel.classList.remove('active');
         }
         document.getElementById('p-close').addEventListener('click', hidePanel);
-
-        function createGlowTexture() {
-            const canvas = document.createElement('canvas');
-            canvas.width = 64; canvas.height = 64;
-            const ctx = canvas.getContext('2d');
-            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
-            g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.3, 'rgba(255,255,255,0.2)');
-            g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g;
-            ctx.fillRect(0,0,64,64);
-            return new THREE.CanvasTexture(canvas);
-        }
 
         window.addEventListener('resize', () => {
             camera.aspect = window.innerWidth / window.innerHeight;
