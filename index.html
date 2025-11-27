@@ -3,250 +3,259 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONALIA: Neural Architecture</title>
+    <title>SONALIA: CONCEPT INTEGRITY</title>
     <style>
-        /* --- CORE STYLE --- */
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Helvetica Neue', Arial, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Consolas, sans-serif; }
         canvas { display: block; }
 
-        /* --- 1. SONALIA LOGO LOADER --- */
+        /* --- 1. BOOT SEQUENCE --- */
         #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 9999;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 1.5s cubic-bezier(0.19, 1, 0.22, 1);
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
         }
-        .logo-container { text-align: center; position: relative; }
-        .logo-main {
-            font-size: 60px; font-weight: 800; letter-spacing: 15px; color: #fff;
-            text-shadow: 0 0 20px rgba(0,255,255,0.8);
-            margin: 0; padding-left: 15px; /* letter-spacing補正 */
-            animation: glitch-anim 2s infinite alternate-reverse;
-            position: relative;
+        .logo-box { position: relative; text-align: center; }
+        .logo-text {
+            font-size: 5em; font-weight: 900; color: #fff; letter-spacing: 0.2em; margin: 0;
+            text-shadow: 0 0 40px rgba(0,255,255,0.6);
+            animation: glitch 4s infinite;
         }
-        .logo-sub {
-            font-size: 12px; color: #00ffff; letter-spacing: 8px; margin-top: 10px;
-            text-transform: uppercase; opacity: 0;
-            animation: fade-in-up 2s ease-out forwards 0.5s;
+        .logo-sub { 
+            color: #00ffff; font-size: 0.9em; letter-spacing: 0.5em; margin-top: 15px; opacity: 0; 
+            animation: fadeup 2s forwards 0.5s; font-family: monospace;
         }
-        .loading-bar {
-            width: 200px; height: 2px; background: #111; margin-top: 30px; position: relative; overflow: hidden;
-        }
-        .loading-progress {
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #00ffff;
-            box-shadow: 0 0 10px #00ffff;
-            animation: progress-fill 3s cubic-bezier(0.23, 1, 0.32, 1) forwards;
-        }
-
-        @keyframes fade-in-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-        @keyframes progress-fill { 0% { width: 0%; } 100% { width: 100%; } }
-        /* 簡易グリッチ演出 */
-        @keyframes glitch-anim {
-            0% { text-shadow: 2px 0 #ff0055, -2px 0 #00ffff; }
-            90% { text-shadow: 2px 0 #ff0055, -2px 0 #00ffff; }
-            92% { text-shadow: -2px 0 #ff0055, 2px 0 #00ffff; transform: skewX(10deg); }
-            94% { text-shadow: 0 0 0; transform: skewX(0deg); }
-            100% { text-shadow: 2px 0 #ff0055, -2px 0 #00ffff; }
-        }
-
-        /* --- UI LAYER --- */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        .loading-line { width: 0%; height: 2px; background: #00ffff; margin-top: 30px; animation: loadLine 3s cubic-bezier(0.2,1,0.2,1) forwards; }
         
-        #hud-top { 
-            position: absolute; top: 30px; left: 40px; 
-            border-left: 4px solid #00ffff; padding-left: 15px;
-        }
-        .hud-title { font-size: 18px; color: #fff; font-weight: bold; letter-spacing: 2px; }
-        .hud-subtitle { font-size: 10px; color: #888; letter-spacing: 1px; margin-top: 5px; font-family: monospace; }
-
-        #logic-status {
-            position: absolute; bottom: 50px; width: 100%; text-align: center;
-            font-family: 'Consolas', monospace; font-size: 14px; letter-spacing: 2px;
-            color: #00ffff; text-shadow: 0 0 10px rgba(0,255,255,0.5);
+        @keyframes fadeup { to { opacity: 1; } }
+        @keyframes loadLine { to { width: 400px; } }
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            1% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
+            2% { transform: translate(2px, -2px); filter: hue-rotate(-90deg); }
+            3% { transform: translate(0); filter: none; }
         }
 
-        /* --- INFO PANEL (Rich Text) --- */
+        /* --- 2. ARCHITECTURAL UI --- */
+        #side-menu {
+            position: absolute; top: 0; left: 0; width: 240px; height: 100%;
+            background: linear-gradient(90deg, rgba(0,5,10,0.9), rgba(0,5,10,0.6));
+            border-right: 1px solid rgba(0,255,255,0.15);
+            overflow-y: auto; z-index: 100; padding: 40px 0;
+            backdrop-filter: blur(10px);
+        }
+        .menu-group { margin-bottom: 30px; }
+        .menu-header {
+            font-size: 10px; color: #00ffff; padding: 5px 25px; letter-spacing: 2px; font-weight: bold;
+            border-bottom: 1px solid rgba(0,255,255,0.2); margin-bottom: 8px;
+        }
+        .menu-item {
+            padding: 8px 25px; color: #777; font-size: 11px; cursor: pointer; transition: 0.2s;
+            border-left: 3px solid transparent; font-family: 'Consolas', monospace; letter-spacing: 1px;
+            display: flex; justify-content: space-between;
+        }
+        .menu-item:hover { color: #fff; background: rgba(0,255,255,0.05); }
+        .menu-item.active { 
+            color: #fff; background: rgba(0,255,255,0.1); border-left: 3px solid #00ffff; 
+            text-shadow: 0 0 10px rgba(0,255,255,0.5);
+        }
+        .item-id { font-weight: bold; }
+
+        /* --- 3. LOGIC MONITOR (HUD) --- */
+        #hud-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
+        #logic-monitor {
+            position: absolute; bottom: 40px; left: 260px; right: 40px;
+            text-align: center; font-family: 'Consolas', monospace;
+        }
+        .phase-label {
+            font-size: 12px; color: #555; letter-spacing: 3px; margin-bottom: 5px; display: block;
+        }
+        .phase-val {
+            font-size: 16px; color: #00ffff; letter-spacing: 2px; 
+            text-shadow: 0 0 15px rgba(0,255,255,0.8);
+            background: rgba(0,0,0,0.6); padding: 5px 15px; border: 1px solid #004444; display: inline-block;
+        }
+
+        /* --- 4. DATA PANEL --- */
         #panel {
-            position: absolute; top: 0; right: 0; width: 450px; height: 100%;
-            background: rgba(8, 10, 15, 0.95); border-left: 1px solid rgba(0,255,255,0.2);
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-            pointer-events: auto; color: #eee; display: flex; flex-direction: column;
-            box-shadow: -20px 0 50px rgba(0,0,0,0.8);
+            position: absolute; top: 0; right: 0; width: 420px; height: 100%;
+            background: rgba(8, 11, 15, 0.96); border-left: 1px solid #333;
+            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            color: #eee; display: flex; flex-direction: column; z-index: 100;
+            box-shadow: -30px 0 60px rgba(0,0,0,0.9);
         }
         #panel.active { transform: translateX(0); }
         
-        .panel-header {
-            padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.1);
-            background: linear-gradient(90deg, rgba(0,255,255,0.05), transparent);
+        .p-header { 
+            padding: 40px 30px 20px; border-bottom: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(180deg, rgba(0,255,255,0.05), transparent);
         }
-        .panel-tag { 
-            font-size: 10px; background: #00ffff; color: #000; padding: 3px 6px; 
-            font-weight: bold; border-radius: 2px; letter-spacing: 1px;
+        .p-tag { 
+            font-size: 10px; background: #00ffff; color: #000; padding: 4px 8px; 
+            border-radius: 2px; font-weight: 800; letter-spacing: 1px;
         }
-        .panel-title { 
-            margin: 10px 0 0 0; font-size: 28px; color: #fff; text-shadow: 0 0 15px rgba(0,255,255,0.3);
+        .p-title { 
+            font-size: 32px; margin: 15px 0 5px; color: #fff; font-weight: 300; letter-spacing: 1px;
+            text-shadow: 0 0 20px currentColor; 
         }
+        .p-body { padding: 30px; overflow-y: auto; flex: 1; }
         
-        .panel-body { padding: 30px; overflow-y: auto; flex-grow: 1; }
-        .panel-desc { font-size: 14px; line-height: 1.8; color: #ccc; margin-bottom: 30px; }
-        
-        .stat-box { margin-bottom: 20px; }
-        .stat-label { font-size: 11px; color: #00ffff; margin-bottom: 5px; border-bottom: 1px solid #333; display: block; padding-bottom: 2px; }
-        .stat-val { font-size: 13px; color: #fff; font-family: monospace; line-height: 1.5; }
+        .data-section { margin-bottom: 30px; }
+        .data-label { 
+            font-size: 10px; color: #00ffff; letter-spacing: 2px; margin-bottom: 8px; 
+            border-bottom: 1px solid #333; padding-bottom: 3px; display: block;
+        }
+        .data-text { font-size: 13px; line-height: 1.8; color: #ccc; }
+        .data-highlight { 
+            font-size: 14px; color: #fff; font-family: 'Consolas', monospace; 
+            background: rgba(255,255,255,0.05); padding: 15px; border-radius: 4px;
+            border-left: 3px solid #00ffff;
+        }
 
         .close-btn { 
-            position: absolute; top: 20px; right: 20px; font-size: 24px; color: #666; cursor: pointer; transition: 0.2s; 
+            position: absolute; top: 20px; right: 20px; font-size: 24px; color: #555; 
+            cursor: pointer; transition: 0.2s; 
         }
         .close-btn:hover { color: #fff; }
 
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
+        /* Responsive */
+        @media(max-width: 900px) {
+            #side-menu { width: 60px; }
+            .menu-item span:last-child { display: none; } /* Hide text keep ID */
+            .menu-header { display: none; }
+            #panel { width: 100%; }
+            #logic-monitor { left: 10px; right: 10px; bottom: 20px; }
+        }
     </style>
 
-    <script type="importmap">
-        {
-            "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
-                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
-            }
-        }
-    </script>
+    <script src="https://unpkg.com/three@0.128.0/build/three.min.js"></script>
+    <script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
 <body>
 
     <div id="loader">
-        <div class="logo-container">
-            <h1 class="logo-main">SONALIA</h1>
-            <div class="logo-sub">HUMAN LOGIC ARCHITECTURE</div>
-            <div class="loading-bar"><div class="loading-progress"></div></div>
+        <div class="logo-box">
+            <h1 class="logo-text">SONALIA</h1>
+            <div class="logo-sub">LOGIC ARCHITECTURE v1.0</div>
+            <div class="loading-line"></div>
         </div>
     </div>
 
-    <div id="ui-layer">
-        <div id="hud-top">
-            <div class="hud-title">SONALIA CORE</div>
-            <div class="hud-subtitle">VISUALIZING INNER LOGIC CIRCUITS</div>
+    <div id="side-menu">
+        <div class="menu-group">
+            <div class="menu-header">/// 8 OS (LENS)</div>
+            <div id="list-os"></div>
         </div>
-        <div id="logic-status">SYSTEM INITIALIZING...</div>
+        <div class="menu-group">
+            <div class="menu-header">/// 8 FACTORS (VECTOR)</div>
+            <div id="list-coef"></div>
+        </div>
+        <div class="menu-group">
+            <div class="menu-header">/// 4 DB (MEMORY)</div>
+            <div id="list-db"></div>
+        </div>
+    </div>
+
+    <div id="hud-layer">
+        <div id="logic-monitor">
+            <span class="phase-label" id="phase-lbl">SYSTEM STATUS</span>
+            <div class="phase-val" id="phase-val">STANDBY</div>
+        </div>
     </div>
 
     <div id="panel">
         <div class="close-btn" id="p-close">×</div>
-        <div class="panel-header">
-            <span class="panel-tag" id="p-tag">OS</span>
-            <h2 class="panel-title" id="p-title">Survival OS</h2>
+        <div class="p-header">
+            <span class="p-tag" id="p-tag">TAG</span>
+            <h2 class="p-title" id="p-title">Title</h2>
         </div>
-        <div class="panel-body">
-            <div class="stat-box">
-                <span class="stat-label">DEFINITION</span>
-                <div class="panel-desc" id="p-desc">説明文がここに入ります。</div>
+        <div class="p-body">
+            <div class="data-section">
+                <span class="data-label">DEFINITION</span>
+                <div class="data-text" id="p-desc">...</div>
             </div>
-            
-            <div class="stat-box">
-                <span class="stat-label">SYSTEM ROLE</span>
-                <div class="stat-val" id="p-role">Processing...</div>
+            <div class="data-section">
+                <span class="data-label">FUNCTION ROLE</span>
+                <div class="data-text" id="p-role">...</div>
             </div>
-            
-            <div class="stat-box">
-                <span class="stat-label">TYPICAL THOUGHT</span>
-                <div class="stat-val" id="p-thought">Thinking...</div>
+            <div class="data-section">
+                <span class="data-label">INTERNAL THOUGHT (VOICE)</span>
+                <div class="data-highlight" id="p-thought">...</div>
             </div>
         </div>
     </div>
 
-    <script type="module">
-        import * as THREE from 'three';
-        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-
+    <script>
         // ==========================================
-        // 1. RICH DATA (ソナリア理論 完全版)
+        // 0. SONALIA LOGIC DATA (Full Definition)
         // ==========================================
         const DATA = {
             OS: [
                 { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, 
-                  desc: "【危険 ↔ 安全】\n最優先でリスクを回避し、生命と生活の維持を図る判断基準。\n不安や警戒心が強い時に活性化し、石橋を叩いて渡る行動を促します。",
-                  role: "リスクマネジメント・安全確保", thought: "「これは危なくないか？」「最悪どうなる？」" },
-                
-                { id: "LIFE", name: "生活OS", color: 0x33FF33, 
-                  desc: "【既知 ↔ 未知】\nルーティンの維持、あるいは新しい変化への適応を判断するレンズ。\n日常の安定を好むか、刺激を求めるかのバロメーターとなります。",
-                  role: "習慣維持・環境適応", thought: "「いつものパターンか？」「新しいことを試すか？」" },
-
-                { id: "EVAL", name: "評価OS", color: 0x3388FF, 
-                  desc: "【善 ↔ 悪 / 正 ↔ 誤】\n正義、ルール、マナー、道徳的に正しいかを採点する機能。\n自分や他人の行動に対して厳格な基準を持ちます。",
-                  role: "善悪判断・規律維持", thought: "「それは正しいことか？」「ルール違反ではないか？」" },
-
-                { id: "BELONG", name: "所属OS", color: 0xFF8833, 
-                  desc: "【内 ↔ 外】\n集団の中にいるか、仲間外れになっていないかを確認する社会的な本能。\n孤独を恐れ、同調圧力を感じ取るセンサーです。",
-                  role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？」「浮いていないか？」" },
-
-                { id: "REWARD", name: "報酬OS", color: 0xFFD700, 
-                  desc: "【損 ↔ 得】\nコストパフォーマンス、利益、時間的・金銭的メリットを計算する。\n感情よりも実利を優先する、合理的な経済人モード。",
-                  role: "損得勘定・効率化", thought: "「やる価値はあるか？」「元は取れるか？」" },
-
-                { id: "MEANING", name: "意味OS", color: 0x9933FF, 
-                  desc: "【意義 ↔ 無意味】\n自分の人生にとって意味があるか、誇れるかを問う高次の欲求。\n損得抜きで、使命感や自己実現のために動く原動力。",
-                  role: "自己実現・意義の探求", thought: "「自分にとってどんな意味がある？」「誇れるか？」" },
-
-                { id: "TIME", name: "時間OS", color: 0x00FFFF, 
-                  desc: "【過去 ↔ 未来】\n過去の経験則（後悔・教訓）に基づくか、未来の予測（計画・不安）に基づくか。\n時間軸に沿って物事をシミュレーションします。",
-                  role: "過去参照・未来予測", thought: "「前もこうだった」「このままだと将来どうなる？」" },
-
-                { id: "HARMONY", name: "協調OS", color: 0xFF66AA, 
-                  desc: "【自分 ↔ 他人】\n自分の意志を通すか、全体のために譲るかのバランス調整機能。\n優しさ、思いやり、あるいは自己犠牲として現れます。",
-                  role: "利害調整・調和", thought: "「相手はどう思うか？」「自分が我慢すれば丸く収まるか？」" }
+                  desc: "【危険 ↔ 安全】を判断するレンズ。最優先でリスクを回避し、生命と生活の維持を図る。原始的かつ強力な防衛本能。",
+                  role: "リスクマネジメント・安全確保", thought: "「これは危なくないか？最悪どうなる？」" },
+                { id: "LIFE",     name: "生活OS", color: 0x33FF33, 
+                  desc: "【既知 ↔ 未知】を判断するレンズ。ルーティンの維持、あるいは新しい変化への適応を司る。日常の安定装置。",
+                  role: "習慣維持・環境適応", thought: "「いつものパターンか？新しい体験か？」" },
+                { id: "EVAL",     name: "評価OS", color: 0x3388FF, 
+                  desc: "【善 ↔ 悪 / 正 ↔ 誤】を判断するレンズ。正義、ルール、マナー、道徳的に正しいかを採点する超自我。",
+                  role: "善悪判断・規律維持", thought: "「それは正しいことか？許されるのか？」" },
+                { id: "BELONG",   name: "所属OS", color: 0xFF8833, 
+                  desc: "【内 ↔ 外】を判断するレンズ。集団の中にいるか、仲間外れになっていないかを確認する社会的本能。",
+                  role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？浮いていないか？」" },
+                { id: "REWARD",   name: "報酬OS", color: 0xFFD700, 
+                  desc: "【損 ↔ 得】を判断するレンズ。コストパフォーマンス、利益、時間的メリットを計算する合理性。",
+                  role: "損得勘定・効率化", thought: "「やる価値はあるか？元は取れるか？」" },
+                { id: "MEANING",  name: "意味OS", color: 0x9933FF, 
+                  desc: "【意義 ↔ 無意味】を判断するレンズ。自分の人生にとって意味があるか、誇れるかを問う自己実現欲求。",
+                  role: "意義の探求・物語化", thought: "「自分にとってどんな意味がある？誇れるか？」" },
+                { id: "TIME",     name: "時間OS", color: 0x00FFFF, 
+                  desc: "【過去 ↔ 未来】を判断するレンズ。過去の経験則（後悔）か、未来の予測（不安・希望）か、時間軸で捉える。",
+                  role: "過去参照・未来予測", thought: "「前もこうだった」「将来どうなる？」" },
+                { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, 
+                  desc: "【自分 ↔ 他人】を判断するレンズ。自分の意志を通すか、全体のために譲るかのバランス調整機能。",
+                  role: "利害調整・調和", thought: "「相手はどう思う？自分が譲るべきか？」" }
             ],
             COEF: [
-                { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, 
-                  desc: "【論理・分析係数】\n情報を整理・構造化し、筋道を立てる力。高いと説明上手だが、理屈っぽくなることも。", role: "ロジック構築・構造分解" },
-                { id: "EQ", name: "EQ (感情)", color: 0xFF6666, 
-                  desc: "【感情リテラシー係数】\n自分と他人の感情を察知し、扱う力。チームの潤滑油となる。", role: "共感・感情理解" },
-                { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, 
-                  desc: "【社会・対人係数】\n関係性をつくり、維持し、場に適応する力。人脈作りや空気感の調整。", role: "処世術・ネットワーキング" },
-                { id: "AQ", name: "AQ (逆境)", color: 0x888888, 
-                  desc: "【逆境耐性係数】\nストレス・困難・失敗を受けたときの粘りと回復力。", role: "レジリエンス・ストレス耐性" },
-                { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, 
-                  desc: "【好奇・創造係数】\n新しいものへの好奇心と、発想・工夫を生む力。", role: "アイデア創出・好奇心" },
-                { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, 
-                  desc: "【人間力・公平性係数】\n公平さ・誠実さ・倫理観・信頼性を保つ力。", role: "誠実さ・倫理観" },
-                { id: "MQ", name: "MQ (行動)", color: 0xFF3300, 
-                  desc: "【行動力係数】\n考えたことを実際の行動に移すスピードと量。", role: "実行力・スピード" },
-                { id: "KQ", name: "KQ (知識)", color: 0x00FF88, 
-                  desc: "【知識・経験活用係数】\n持っている知識・経験を必要な場面で取り出して使う力。", role: "応用力・知見活用" }
+                { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, desc: "情報を整理・構造化し、筋道を立てる力。", role: "Logic Processing", thought: "分析・分解・再構築" },
+                { id: "EQ", name: "EQ (感情)", color: 0xFF6666, desc: "自分と他人の感情を察知し、扱う力。", role: "Empathy Engine", thought: "共感・配慮・感情理解" },
+                { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, desc: "関係性をつくり、維持し、場に適応する力。", role: "Social Adaptor", thought: "適応・人脈・交渉" },
+                { id: "AQ", name: "AQ (逆境)", color: 0x888888, desc: "ストレス・困難に対する粘りと回復力。", role: "Resilience Core", thought: "耐久・回復・忍耐" },
+                { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, desc: "新しいものへの好奇心と発想・工夫を生む力。", role: "Idea Generator", thought: "好奇心・発想・着眼" },
+                { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, desc: "公平さ・誠実さ・倫理観・信頼性を保つ力。", role: "Ethical Anchor", thought: "誠実・公平・信頼" },
+                { id: "MQ", name: "MQ (行動)", color: 0xFF3300, desc: "考えたことを実際の行動に移すスピードと量。", role: "Action Driver", thought: "即断・即決・実行" },
+                { id: "KQ", name: "KQ (知識)", color: 0x00FF88, desc: "知識・経験を必要な場面で取り出して使う力。", role: "Knowledge Base", thought: "応用・転用・参照" }
             ],
             DB: [
-                { id:"DESIRE", name: "欲求DB", color: 0xFF5500, pos: [-100, 60, -60], 
-                  desc: "「〜したい」「〜されたい」という根源的な渇望の保管庫。\n承認欲求、安全欲求などがここに含まれます。", role: "Motivation Source" },
-                { id:"EMOTION", name: "情動DB", color: 0x0055FF, pos: [100, 60, -60], 
-                  desc: "「快・不快」「恐怖・安心」などの感情記憶のクラウド。\n過去のトラウマや喜びが瞬時に呼び出されます。", role: "Emotional Memory" },
-                { id:"VALUE", name: "価値観DB", color: 0xFFD700, pos: [-100, -60, -60], 
-                  desc: "「〜すべき」「〜あるべき」という信念体系。\n親や社会から刷り込まれたルールが格納されています。", role: "Core Values" },
-                { id:"IMPLICIT", name: "無意識DB", color: 0x666666, pos: [100, -60, -60], 
-                  desc: "習慣、癖、反射的に取ってしまう行動パターンのログ。\n考えずに体が動く領域です。", role: "Auto-Pilot Scripts" }
+                { id:"DESIRE", name: "欲求DB", color: 0xFF5500, desc: "「〜したい」「〜されたい」という根源的渇望。\n承認欲求、安全欲求など行動の源泉。", role: "Motivation Drive", thought: "Deep Desire / Craving" },
+                { id:"EMOTION", name: "情動DB", color: 0x0055FF, desc: "「快・不快」「恐怖・安心」などの感情記憶。\n過去の体験に基づく直感的な反応。", role: "Affective Memory", thought: "Emotional Flashback" },
+                { id:"VALUE", name: "価値観DB", color: 0xFFD700, desc: "「〜すべき」「〜あるべき」という信念体系。\n親や社会から刷り込まれた判断ルール。", role: "Belief System", thought: "Core Rules / Dogma" },
+                { id:"IMPLICIT", name: "無意識DB", color: 0x666666, desc: "習慣、癖、反射的に取ってしまう行動パターン。\n思考を介さずに自動実行されるスクリプト。", role: "Auto-Pilot Scripts", thought: "Habits / Reflex" }
             ]
         };
 
         // ==========================================
-        // 2. SCENE SETUP
+        // 1. SCENE SETUP
         // ==========================================
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
+        scene.fog = new THREE.FogExp2(0x000000, 0.001);
 
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 2000);
-        camera.position.set(0, 30, 240);
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
+        camera.position.set(0, 40, 300);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         document.body.appendChild(renderer.domElement);
 
-        const controls = new OrbitControls(camera, renderer.domElement);
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
         controls.autoRotate = true;
         controls.autoRotateSpeed = 0.4;
 
-        // Texture Helpers
+        // Assets
         function createGlowTexture() {
             const c = document.createElement('canvas'); c.width=64; c.height=64;
             const ctx = c.getContext('2d');
@@ -254,261 +263,303 @@
             g.addColorStop(0, 'rgba(255,255,255,1)');
             g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
             g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = g; ctx.fillRect(0,0,64,64);
+            ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
             return new THREE.CanvasTexture(c);
         }
         const glowTex = createGlowTexture();
         const interactables = [];
+        const idMap = {}; // ID -> Object mapping
+
         const mainGroup = new THREE.Group();
         scene.add(mainGroup);
 
         // ==========================================
-        // 3. OBJECT GENERATION (Explicit Circuits)
+        // 2. ARCHITECTURE CONSTRUCTION
         // ==========================================
 
-        // A. CENTRAL BRAIN (OS)
+        // --- A. CENTRAL PROCESSING UNIT (OS CORE) ---
         const osGroup = new THREE.Group();
         mainGroup.add(osGroup);
-        
-        // Complex Wireframe Core
-        const coreGeo = new THREE.IcosahedronGeometry(14, 2);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x0088ff, wireframe: true, transparent: true, opacity: 0.1 });
-        const core = new THREE.Mesh(coreGeo, coreMat);
-        osGroup.add(core);
 
-        const osNodes = [];
+        // Brain Wireframe
+        const coreGeo = new THREE.IcosahedronGeometry(18, 2);
+        const coreMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, wireframe: true, transparent: true, opacity: 0.1 });
+        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+        osGroup.add(coreMesh);
+
         DATA.OS.forEach((d, i) => {
+            // Sphere placement
             const phi = Math.acos( -1 + ( 2 * i ) / 8 );
             const theta = Math.sqrt( 8 * Math.PI ) * phi;
-            const r = 20;
+            const r = 24;
             const x = r * Math.cos(theta) * Math.sin(phi);
             const y = r * Math.sin(theta) * Math.sin(phi);
             const z = r * Math.cos(phi);
             const pos = new THREE.Vector3(x, y, z);
 
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: d.color }));
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(3), new THREE.MeshBasicMaterial({ color: d.color }));
             mesh.position.copy(pos);
             mesh.userData = { type: 'OS', data: d };
             
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(25,25,1);
+            spr.scale.set(30,30,1);
             mesh.add(spr);
 
             osGroup.add(mesh);
             interactables.push(mesh);
-            osNodes.push({pos, color: d.color});
+            idMap[d.id] = mesh;
         });
 
-        // B. OUTER RING (Coefficients)
+        // --- B. VECTOR ENGINES (COEFFICIENTS) ---
         const coefGroup = new THREE.Group();
         mainGroup.add(coefGroup);
-        const coefMeshes = [];
+        const coefObjs = [];
 
         DATA.COEF.forEach((d, i) => {
             const angle = (i / 8) * Math.PI * 2;
-            const rad = 75;
+            const rad = 85;
             const x = Math.cos(angle) * rad;
             const z = Math.sin(angle) * rad;
             const pos = new THREE.Vector3(x, 0, z);
 
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(5,5,5), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
             mesh.position.copy(pos);
             mesh.userData = { type: 'COEF', data: d };
 
             const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(35,35,1);
+            spr.scale.set(45,45,1);
             mesh.add(spr);
 
             coefGroup.add(mesh);
             interactables.push(mesh);
-            coefMeshes.push(mesh); // For connecting later
+            coefObjs.push(mesh);
+            idMap[d.id] = mesh;
         });
 
-        // C. NEURAL BUNDLES (Explicit Circuit Lines)
-        // OSと係数を「明確なカーブ」でつなぐ（KamuiOS風）
-        const circuitGroup = new THREE.Group();
-        mainGroup.add(circuitGroup);
+        // --- C. NEURAL CABLES (OS <-> COEF) ---
+        // Thick tubes representing solid pathways
+        const cableGroup = new THREE.Group();
+        mainGroup.add(cableGroup);
 
-        coefMeshes.forEach((targetMesh, i) => {
-            // Find closest OS node or just center
-            const startPos = new THREE.Vector3(0,0,0);
-            const endPos = targetMesh.position;
-            
-            // Bezier Curve for organic connection
-            const midPos = startPos.clone().add(endPos).multiplyScalar(0.5);
-            midPos.y += 20; // Arch up
+        coefObjs.forEach(target => {
+            const start = new THREE.Vector3(0,0,0);
+            const end = target.position;
+            const mid = start.clone().lerp(end, 0.5);
+            mid.y += 25; // Arch
 
-            const curve = new THREE.QuadraticBezierCurve3(startPos, midPos, endPos);
-            const points = curve.getPoints(20);
-            const geometry = new THREE.BufferGeometry().setFromPoints(points);
-            const material = new THREE.LineBasicMaterial({ 
-                color: targetMesh.userData.data.color, 
-                transparent: true, opacity: 0.3,
-                linewidth: 2 // Note: WebGL linewidth is limited
+            const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+            const pts = curve.getPoints(20);
+            const geo = new THREE.BufferGeometry().setFromPoints(pts);
+            const mat = new THREE.LineBasicMaterial({ 
+                color: target.userData.data.color, 
+                transparent: true, opacity: 0.4 
             });
-            
-            // Create a "Tube" look using multiple lines or just bright lines
-            const line = new THREE.Line(geometry, material);
-            circuitGroup.add(line);
+            const cable = new THREE.Line(geo, mat);
+            cableGroup.add(cable);
         });
 
-        // D. DB CLOUDS (Particles)
+        // --- D. DEEP MEMORY (DB) ---
         const dbGroup = new THREE.Group();
         mainGroup.add(dbGroup);
 
-        DATA.DB.forEach(d => {
-            const count = 150;
-            const pPos = [];
-            const col = new THREE.Color(d.color);
-            const pCols = [];
+        DATA.DB.forEach((d, i) => {
+            // Deep Position
+            const angle = (i/4) * Math.PI * 2;
+            const r = 50;
+            const x = Math.cos(angle)*r;
+            const z = Math.sin(angle)*r;
+            const pos = new THREE.Vector3(x, -80, z);
 
-            for(let i=0; i<count; i++) {
-                const spread = 40;
-                const v = new THREE.Vector3(
-                    d.pos[0] + (Math.random()-0.5)*spread,
-                    d.pos[1] + (Math.random()-0.5)*spread,
-                    d.pos[2] + (Math.random()-0.5)*spread
-                );
-                pPos.push(v.x, v.y, v.z);
-                pCols.push(col.r, col.g, col.b);
+            // Cloud
+            const pGeo = new THREE.Geometry();
+            for(let k=0; k<150; k++) {
+                const spread=30;
+                pGeo.vertices.push(new THREE.Vector3(
+                    pos.x+(Math.random()-0.5)*spread,
+                    pos.y+(Math.random()-0.5)*spread,
+                    pos.z+(Math.random()-0.5)*spread
+                ));
             }
-            
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.Float32BufferAttribute(pPos, 3));
-            geo.setAttribute('color', new THREE.Float32BufferAttribute(pCols, 3));
-            const mat = new THREE.PointsMaterial({ size: 2.0, map: glowTex, vertexColors: true, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending, depthWrite: false });
-            const pts = new THREE.Points(geo, mat);
-            dbGroup.add(pts);
+            const pMat = new THREE.PointsMaterial({ color: d.color, size:2, map:glowTex, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false });
+            const cloud = new THREE.Points(pGeo, pMat);
+            dbGroup.add(cloud);
 
-            // Connect lines from Center to DB
-            const lineGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0), new THREE.Vector3(d.pos[0], d.pos[1], d.pos[2])]);
-            const lineMat = new THREE.LineBasicMaterial({ color: d.color, transparent: true, opacity: 0.1 });
+            // Connection to Brain
+            const lineGeo = new THREE.Geometry();
+            lineGeo.vertices.push(new THREE.Vector3(0,-20,0), pos);
+            const lineMat = new THREE.LineBasicMaterial({ color: d.color, transparent:true, opacity:0.15 });
             dbGroup.add(new THREE.Line(lineGeo, lineMat));
 
-            const box = new THREE.Mesh(new THREE.BoxGeometry(50,50,50), new THREE.MeshBasicMaterial({visible:false}));
-            box.position.set(d.pos[0], d.pos[1], d.pos[2]);
+            // Hitbox
+            const box = new THREE.Mesh(new THREE.BoxGeometry(40,40,40), new THREE.MeshBasicMaterial({visible:false}));
+            box.position.copy(pos);
             box.userData = { type: 'DB', data: d };
             interactables.push(box);
+            idMap[d.id] = box;
         });
 
-        // E. LOGIC PULSE
+        // --- E. LOGIC PULSE ---
         const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
         const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
         pulseSpr.scale.set(25,25,1);
         pulse.add(pulseSpr);
         scene.add(pulse);
 
+
         // ==========================================
-        // 4. ANIMATION LOOP
+        // 3. UI GENERATION
+        // ==========================================
+        function createMenu(containerId, list) {
+            const container = document.getElementById(containerId);
+            list.forEach(d => {
+                const div = document.createElement('div');
+                div.className = 'menu-item';
+                div.innerHTML = `<span class="item-id">${d.id}</span><span>${d.name}</span>`;
+                div.onclick = () => selectItem(d.id, d.color);
+                container.appendChild(div);
+            });
+        }
+        createMenu('list-os', DATA.OS);
+        createMenu('list-coef', DATA.COEF);
+        createMenu('list-db', DATA.DB);
+
+        // ==========================================
+        // 4. ANIMATION & LOGIC LOOP
         // ==========================================
         const clock = new THREE.Clock();
-        const logicText = document.getElementById('logic-status');
-        
-        // Hide Loader after delay
-        window.addEventListener('load', () => {
-            setTimeout(() => {
-                const l = document.getElementById('loader');
-                l.style.opacity = 0;
-                setTimeout(() => { l.style.display = 'none'; }, 1500);
-            }, 3000); // 3秒見せる（ロゴアニメのため）
-        });
+        const lblPhase = document.getElementById('phase-lbl');
+        const valPhase = document.getElementById('phase-val');
 
-        function animate() {
+        // Loading Done
+        setTimeout(() => {
+            const l = document.getElementById('loader');
+            l.style.opacity = 0;
+            setTimeout(()=>l.style.display='none', 1000);
+        }, 3000);
+
+        function animate(time) {
             requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
+            TWEEN.update(time);
             controls.update();
+            const delta = clock.getElapsedTime();
 
-            // Organic Movement
-            osGroup.rotation.y = Math.sin(time*0.1)*0.1;
-            const beat = 1 + Math.sin(time*2)*0.03;
+            // Organic Breathing
+            const beat = 1 + Math.sin(delta*2)*0.03;
             osGroup.scale.set(beat, beat, beat);
+            cableGroup.scale.set(beat, beat, beat);
             
-            // Circuits pulsate with the brain
-            circuitGroup.scale.set(beat, beat, beat);
+            osGroup.rotation.y = Math.sin(delta*0.1)*0.1;
+            coefGroup.rotation.y = delta * -0.1;
+            cableGroup.rotation.y = delta * -0.1;
 
-            coefGroup.rotation.y = time * -0.1;
-            coefMeshes.forEach((m,i) => {
-                m.rotation.x += 0.02;
-                m.rotation.z += 0.01; 
-                m.position.y = Math.sin(time + i)*8; // Floating
-            });
-
-            // Logic Flow Animation (Input -> OS -> DB -> Coef -> Output)
-            const t = time % 7.0; // 7 sec cycle
+            // --- SONALIA LOGIC LOOP (4 Phases) ---
+            const loopLen = 8.0;
+            const t = delta % loopLen;
             let target = new THREE.Vector3();
             let col = 0xffffff;
-            let txt = "SYSTEM IDLE";
+            let pLabel = "SYSTEM IDLE";
+            let pVal = "...";
 
-            if (t < 1.5) { // Input
+            if (t < 1.5) {
+                // PHASE 1: PERCEPTION (INPUT)
                 let p = t/1.5;
                 target.set(0, 180*(1-p), 120*(1-p));
-                txt = ">>> SENSORY INPUT DETECTED";
-            } else if (t < 3.5) { // DB Access
+                col = 0xffffff;
+                pLabel = "PHASE 01: INPUT LAYER";
+                pVal = "PERCEPTION";
+            } else if (t < 3.5) {
+                // PHASE 2: MEANING & MEMORY (OS -> DB)
                 let p = (t-1.5)/2.0;
-                let dbPos = new THREE.Vector3(100, 60, -60);
-                if(p<0.5) target.lerpVectors(new THREE.Vector3(), dbPos, p*2);
-                else target.lerpVectors(dbPos, new THREE.Vector3(), (p-0.5)*2);
+                let db = new THREE.Vector3(0,-80,0);
+                if(p<0.5) target.lerpVectors(new THREE.Vector3(), db, p*2);
+                else target.lerpVectors(db, new THREE.Vector3(), (p-0.5)*2);
                 col = 0x0055FF;
-                txt = "::: REFERENCING DB MEMORY :::";
-            } else if (t < 5.0) { // Processing
-                let p = (t-3.5)/1.5;
-                target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(75,0,0), p);
+                pLabel = "PHASE 02: OS & DB";
+                pVal = "MEANING ASSIGNMENT";
+            } else if (t < 5.5) {
+                // PHASE 3: VECTOR CALCULATION (COEF)
+                let p = (t-3.5)/2.0;
+                target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(85,0,0), p);
                 col = 0x00CCFF;
-                txt = "/// COEFFICIENT PROCESSING ///";
-            } else { // Output
-                let p = (t-5.0)/2.0;
-                target.lerpVectors(new THREE.Vector3(75,0,0), new THREE.Vector3(300,0,0), p);
+                pLabel = "PHASE 03: VECTOR LAYER";
+                pVal = "FACTOR CALCULATION";
+            } else {
+                // PHASE 4: OUTPUT
+                let p = (t-5.5)/2.5;
+                target.lerpVectors(new THREE.Vector3(85,0,0), new THREE.Vector3(300,0,0), p);
                 col = 0xFF3300;
-                txt = "!!! ACTION EXECUTED !!!";
+                pLabel = "PHASE 04: OUTPUT LAYER";
+                pVal = "BEHAVIOR EXECUTION";
             }
 
             pulse.position.copy(target);
             pulse.material.color.setHex(col);
             pulseSpr.material.color.setHex(col);
-            logicText.innerText = txt;
-            logicText.style.color = '#' + col.toString(16).padStart(6,'0');
+            
+            lblPhase.innerText = pLabel;
+            valPhase.innerText = pVal;
+            valPhase.style.color = '#' + col.toString(16).padStart(6,'0');
+            valPhase.style.textShadow = `0 0 15px #${col.toString(16).padStart(6,'0')}`;
+            valPhase.style.borderColor = '#' + col.toString(16).padStart(6,'0');
 
             renderer.render(scene, camera);
         }
         animate();
 
         // ==========================================
-        // 5. INTERACTION & UI
+        // 5. INTERACTION Logic
         // ==========================================
         const raycaster = new THREE.Raycaster();
         const mouse = new THREE.Vector2();
-        
-        window.addEventListener('pointerdown', (e) => {
+
+        function selectItem(id, color) {
+            // Highlight Menu
+            document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+            // Find Dom by text is hard, just use logic if needed, or simple visual feedback in 3D
+            
+            const obj = idMap[id];
+            if(obj) {
+                showPanel(obj.userData);
+                // Camera FlyTo
+                const endPos = obj.position.clone().normalize().multiplyScalar(150);
+                endPos.y += 30;
+                new TWEEN.Tween(camera.position)
+                    .to({x: endPos.x, y: endPos.y, z: endPos.z}, 1200)
+                    .easing(TWEEN.Easing.Cubic.Out)
+                    .start();
+            }
+        }
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.clientX < 240) return; // Ignore menu area
             mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
             const hits = raycaster.intersectObjects(interactables);
             if(hits.length > 0) {
-                showPanel(hits[0].object.userData);
+                const ud = hits[0].object.userData;
+                selectItem(ud.data.id, ud.data.color);
             } else {
                 hidePanel();
             }
         });
 
-        const panel = document.getElementById('panel');
         const pClose = document.getElementById('p-close');
-        pClose.addEventListener('click', hidePanel);
-
+        pClose.onclick = hidePanel;
+        
         function showPanel(ud) {
             const d = ud.data;
             document.getElementById('p-tag').innerText = ud.type;
-            document.getElementById('p-title').innerText = d.name || d.id;
+            document.getElementById('p-title').innerText = d.name;
             document.getElementById('p-title').style.color = '#' + new THREE.Color(d.color).getHexString();
-            
-            // Rich Data Injection
             document.getElementById('p-desc').innerText = d.desc;
-            document.getElementById('p-role').innerText = d.role || "N/A";
-            document.getElementById('p-thought').innerText = d.thought || "N/A";
+            document.getElementById('p-role').innerText = d.role;
+            document.getElementById('p-thought').innerText = d.thought;
             
-            panel.classList.add('active');
+            document.getElementById('panel').classList.add('active');
         }
         function hidePanel() {
-            panel.classList.remove('active');
+            document.getElementById('panel').classList.remove('active');
         }
 
         window.addEventListener('resize', () => {
