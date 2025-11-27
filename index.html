@@ -100,8 +100,22 @@
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    
+    <script>
+        // OrbitControlsをCDNから読み込むための動的スクリプトタグ
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+        script.onload = function() {
+            // ライブラリ読み込み完了後にメイン処理を開始
+            initApp();
+        };
+        script.onerror = function() {
+            document.getElementById('error-log').style.display = 'block';
+            document.getElementById('error-log').innerHTML = "Error: Failed to load OrbitControls.";
+        };
+        document.head.appendChild(script);
+    </script>
 </head>
 <body>
 
@@ -149,7 +163,7 @@
     </div>
 
     <script>
-        // エラーハンドリング (画面に表示)
+        // エラーハンドリング
         window.onerror = function(msg, url, line) {
             const el = document.getElementById('error-log');
             el.style.display = 'block';
@@ -163,323 +177,327 @@
             setTimeout(() => { l.style.display = 'none'; }, 1000);
         };
 
-        // ライブラリチェック
-        if (typeof THREE === 'undefined') {
-            throw new Error("Three.js failed to load. Check connection.");
-        }
-
-        // ==========================================
-        // DATA DEFINITION
-        // ==========================================
-        const DATA = {
-            OS: [
-                { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "【危険 ↔ 安全】を判断するレンズ。最優先でリスクを回避し、生命と生活の維持を図る。", role: "リスクマネジメント", thought: "「危なくないか？最悪どうなる？」" },
-                { id: "LIFE",     name: "生活OS", color: 0x33FF33, desc: "【既知 ↔ 未知】を判断するレンズ。ルーティンの維持、あるいは新しい変化への適応を司る。", role: "習慣維持・環境適応", thought: "「いつものパターンか？新しいか？」" },
-                { id: "EVAL",     name: "評価OS", color: 0x3388FF, desc: "【善 ↔ 悪】を判断するレンズ。正義、ルール、マナー、道徳的に正しいかを採点する。", role: "善悪判断・規律維持", thought: "「それは正しいか？許されるか？」" },
-                { id: "BELONG",   name: "所属OS", color: 0xFF8833, desc: "【内 ↔ 外】を判断するレンズ。集団の中にいるか、仲間外れになっていないかを確認する。", role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？浮いてないか？」" },
-                { id: "REWARD",   name: "報酬OS", color: 0xFFD700, desc: "【損 ↔ 得】を判断するレンズ。コストパフォーマンス、利益、時間的メリットを計算する。", role: "損得勘定・効率化", thought: "「やる価値あるか？元は取れるか？」" },
-                { id: "MEANING",  name: "意味OS", color: 0x9933FF, desc: "【意義 ↔ 無意味】を判断するレンズ。自分の人生にとって意味があるか、誇れるかを問う。", role: "意義の探求", thought: "「どんな意味がある？誇れるか？」" },
-                { id: "TIME",     name: "時間OS", color: 0x00FFFF, desc: "【過去 ↔ 未来】を判断するレンズ。過去の経験則か、未来の予測か、時間軸で捉える。", role: "過去参照・未来予測", thought: "「前もこうだった」「将来どうなる？」" },
-                { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, desc: "【自分 ↔ 他人】を判断するレンズ。自分の意志を通すか、全体のために譲るかのバランス調整。", role: "利害調整・調和", thought: "「相手はどう思う？丸く収まるか？」" }
-            ],
-            COEF: [
-                { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, desc: "情報を構造化し、ロジックを組む力。", role: "Logic Engine", thought: "分析・分解・構造化" },
-                { id: "EQ", name: "EQ (感情)", color: 0xFF6666, desc: "感情を読み取り、配慮する力。", role: "Empathy Core", thought: "共感・配慮・空気解読" },
-                { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, desc: "関係性をつくり、維持し、場に適応する力。", role: "Social Net", thought: "適応・人脈・交渉" },
-                { id: "AQ", name: "AQ (逆境)", color: 0x888888, desc: "ストレスや失敗から立ち直る力。", role: "Resilience", thought: "回復・忍耐・再起" },
-                { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, desc: "新しいアイデアや工夫を生む力。", role: "Innovator", thought: "好奇心・発想・着眼" },
-                { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, desc: "誠実さや公平さを保つ倫理観。", role: "Ethical Core", thought: "誠実・公平・信頼" },
-                { id: "MQ", name: "MQ (行動)", color: 0xFF3300, desc: "実際の行動に移すスピードと量。", role: "Activator", thought: "即断・即決・実行" },
-                { id: "KQ", name: "KQ (知識)", color: 0x00FF88, desc: "知識・経験を取り出して使う力。", role: "Library", thought: "応用・転用・蓄積" }
-            ],
-            DB: [
-                { id:"DESIRE", name: "欲求DB", color: 0xFF5500, desc: "「〜したい」という根源的渇望。", role: "Drive Source", thought: "Deep Desire" },
-                { id:"EMOTION", name: "情動DB", color: 0x0055FF, desc: "「快・不快」などの感情記憶。", role: "Affective Mem", thought: "Flashback" },
-                { id:"VALUE", name: "価値観DB", color: 0xFFD700, desc: "「〜すべき」という信念・ルール。", role: "Belief System", thought: "Core Rules" },
-                { id:"IMPLICIT", name: "無意識DB", color: 0x666666, desc: "習慣や反射行動のログ。", role: "Auto Pilot", thought: "Habits" }
-            ]
-        };
-
-        // ==========================================
-        // 3D SCENE SETUP
-        // ==========================================
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x000000, 0.0015);
-
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
-        camera.position.set(0, 50, 280);
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        document.body.appendChild(renderer.domElement);
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
-
-        // Texture
-        function createGlowTex() {
-            const c = document.createElement('canvas'); c.width=64; c.height=64;
-            const ctx = c.getContext('2d');
-            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
-            g.addColorStop(0, 'rgba(255,255,255,1)');
-            g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
-            g.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
-            return new THREE.CanvasTexture(c);
-        }
-        const glowTex = createGlowTex();
-        const interactables = [];
-        const idMap = {};
-
-        const mainGroup = new THREE.Group();
-        scene.add(mainGroup);
-
-        // ==========================================
-        // OBJECTS
-        // ==========================================
-
-        // A. OS CORE
-        const osGroup = new THREE.Group();
-        mainGroup.add(osGroup);
-        const coreGeo = new THREE.IcosahedronGeometry(15, 2);
-        const coreMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, wireframe: true, transparent: true, opacity: 0.1 });
-        const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-        osGroup.add(coreMesh);
-
-        DATA.OS.forEach((d, i) => {
-            const phi = Math.acos( -1 + ( 2 * i ) / 8 );
-            const theta = Math.sqrt( 8 * Math.PI ) * phi;
-            const r = 22;
-            const x = r * Math.cos(theta) * Math.sin(phi);
-            const y = r * Math.sin(theta) * Math.sin(phi);
-            const z = r * Math.cos(phi);
-            const pos = new THREE.Vector3(x, y, z);
-
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: d.color }));
-            mesh.position.copy(pos);
-            mesh.userData = { type: 'OS', data: d };
-            
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(30,30,1);
-            mesh.add(spr);
-
-            osGroup.add(mesh);
-            interactables.push(mesh);
-            idMap[d.id] = mesh;
-        });
-
-        // B. COEFFICIENTS
-        const coefGroup = new THREE.Group();
-        mainGroup.add(coefGroup);
-        const coefObjs = [];
-
-        DATA.COEF.forEach((d, i) => {
-            const angle = (i / 8) * Math.PI * 2;
-            const rad = 80;
-            const x = Math.cos(angle) * rad;
-            const z = Math.sin(angle) * rad;
-            const pos = new THREE.Vector3(x, 0, z);
-
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
-            mesh.position.copy(pos);
-            mesh.userData = { type: 'COEF', data: d };
-
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-            spr.scale.set(40,40,1);
-            mesh.add(spr);
-
-            coefGroup.add(mesh);
-            interactables.push(mesh);
-            coefObjs.push(mesh);
-            idMap[d.id] = mesh;
-        });
-
-        // C. CABLES
-        const cableGroup = new THREE.Group();
-        mainGroup.add(cableGroup);
-
-        coefObjs.forEach(target => {
-            const start = new THREE.Vector3(0,0,0);
-            const end = target.position;
-            const mid = start.clone().lerp(end, 0.5);
-            mid.y += 25;
-
-            const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-            const pts = curve.getPoints(20);
-            const geo = new THREE.BufferGeometry().setFromPoints(pts);
-            const mat = new THREE.LineBasicMaterial({ color: target.userData.data.color, transparent: true, opacity: 0.3 });
-            cableGroup.add(new THREE.Line(geo, mat));
-        });
-
-        // D. DB MEMORY
-        const dbGroup = new THREE.Group();
-        mainGroup.add(dbGroup);
-
-        DATA.DB.forEach((d, i) => {
-            const angle = (i/4) * Math.PI * 2;
-            const x = Math.cos(angle)*50;
-            const z = Math.sin(angle)*50;
-            const pos = new THREE.Vector3(x, -80, z);
-
-            const pGeo = new THREE.Geometry();
-            for(let k=0; k<100; k++) {
-                const s = 30;
-                pGeo.vertices.push(new THREE.Vector3(
-                    pos.x+(Math.random()-0.5)*s, pos.y+(Math.random()-0.5)*s, pos.z+(Math.random()-0.5)*s
-                ));
+        // アプリ初期化関数（ライブラリ読み込み後に実行）
+        function initApp() {
+            // ライブラリチェック
+            if (typeof THREE === 'undefined') {
+                throw new Error("Three.js failed to load. Check connection.");
             }
-            const pMat = new THREE.PointsMaterial({ color: d.color, size:2, map:glowTex, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false });
-            dbGroup.add(new THREE.Points(pGeo, pMat));
 
-            // Line to Brain
-            const lGeo = new THREE.Geometry();
-            lGeo.vertices.push(new THREE.Vector3(0,-20,0), pos);
-            const lMat = new THREE.LineBasicMaterial({color:d.color, transparent:true, opacity:0.15});
-            dbGroup.add(new THREE.Line(lGeo, lMat));
+            // ==========================================
+            // DATA DEFINITION
+            // ==========================================
+            const DATA = {
+                OS: [
+                    { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "【危険 ↔ 安全】を判断するレンズ。最優先でリスクを回避し、生命と生活の維持を図る。", role: "リスクマネジメント", thought: "「危なくないか？最悪どうなる？」" },
+                    { id: "LIFE",     name: "生活OS", color: 0x33FF33, desc: "【既知 ↔ 未知】を判断するレンズ。ルーティンの維持、あるいは新しい変化への適応を司る。", role: "習慣維持・環境適応", thought: "「いつものパターンか？新しいか？」" },
+                    { id: "EVAL",     name: "評価OS", color: 0x3388FF, desc: "【善 ↔ 悪】を判断するレンズ。正義、ルール、マナー、道徳的に正しいかを採点する。", role: "善悪判断・規律維持", thought: "「それは正しいか？許されるか？」" },
+                    { id: "BELONG",   name: "所属OS", color: 0xFF8833, desc: "【内 ↔ 外】を判断するレンズ。集団の中にいるか、仲間外れになっていないかを確認する。", role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？浮いてないか？」" },
+                    { id: "REWARD",   name: "報酬OS", color: 0xFFD700, desc: "【損 ↔ 得】を判断するレンズ。コストパフォーマンス、利益、時間的メリットを計算する。", role: "損得勘定・効率化", thought: "「やる価値あるか？元は取れるか？」" },
+                    { id: "MEANING",  name: "意味OS", color: 0x9933FF, desc: "【意義 ↔ 無意味】を判断するレンズ。自分の人生にとって意味があるか、誇れるかを問う。", role: "意義の探求", thought: "「どんな意味がある？誇れるか？」" },
+                    { id: "TIME",     name: "時間OS", color: 0x00FFFF, desc: "【過去 ↔ 未来】を判断するレンズ。過去の経験則か、未来の予測か、時間軸で捉える。", role: "過去参照・未来予測", thought: "「前もこうだった」「将来どうなる？」" },
+                    { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, desc: "【自分 ↔ 他人】を判断するレンズ。自分の意志を通すか、全体のために譲るかのバランス調整。", role: "利害調整・調和", thought: "「相手はどう思う？丸く収まるか？」" }
+                ],
+                COEF: [
+                    { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, desc: "情報を構造化し、ロジックを組む力。", role: "Logic Engine", thought: "分析・分解・構造化" },
+                    { id: "EQ", name: "EQ (感情)", color: 0xFF6666, desc: "感情を読み取り、配慮する力。", role: "Empathy Core", thought: "共感・配慮・空気解読" },
+                    { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, desc: "関係性をつくり、維持し、場に適応する力。", role: "Social Net", thought: "適応・人脈・交渉" },
+                    { id: "AQ", name: "AQ (逆境)", color: 0x888888, desc: "ストレスや失敗から立ち直る力。", role: "Resilience", thought: "回復・忍耐・再起" },
+                    { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, desc: "新しいアイデアや工夫を生む力。", role: "Innovator", thought: "好奇心・発想・着眼" },
+                    { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, desc: "誠実さや公平さを保つ倫理観。", role: "Ethical Core", thought: "誠実・公平・信頼" },
+                    { id: "MQ", name: "MQ (行動)", color: 0xFF3300, desc: "実際の行動に移すスピードと量。", role: "Activator", thought: "即断・即決・実行" },
+                    { id: "KQ", name: "KQ (知識)", color: 0x00FF88, desc: "知識・経験を取り出して使う力。", role: "Library", thought: "応用・転用・蓄積" }
+                ],
+                DB: [
+                    { id:"DESIRE", name: "欲求DB", color: 0xFF5500, desc: "「〜したい」という根源的渇望。", role: "Drive Source", thought: "Deep Desire" },
+                    { id:"EMOTION", name: "情動DB", color: 0x0055FF, desc: "「快・不快」などの感情記憶。", role: "Affective Mem", thought: "Flashback" },
+                    { id:"VALUE", name: "価値観DB", color: 0xFFD700, desc: "「〜すべき」という信念・ルール。", role: "Belief System", thought: "Core Rules" },
+                    { id:"IMPLICIT", name: "無意識DB", color: 0x666666, desc: "習慣や反射行動のログ。", role: "Auto Pilot", thought: "Habits" }
+                ]
+            };
 
-            const box = new THREE.Mesh(new THREE.BoxGeometry(40,40,40), new THREE.MeshBasicMaterial({visible:false}));
-            box.position.copy(pos);
-            box.userData = { type: 'DB', data: d };
-            interactables.push(box);
-            idMap[d.id] = box;
-        });
+            // ==========================================
+            // 3D SCENE SETUP
+            // ==========================================
+            const scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.0015);
 
-        // E. PULSE
-        const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
-        const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
-        pulseSpr.scale.set(20,20,1);
-        pulse.add(pulseSpr);
-        scene.add(pulse);
+            const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
+            camera.position.set(0, 50, 280);
 
-        // ==========================================
-        // UI & INTERACTION
-        // ==========================================
-        function createMenu(containerId, list) {
-            const c = document.getElementById(containerId);
-            list.forEach(d => {
-                const el = document.createElement('div');
-                el.className = 'menu-item';
-                el.innerHTML = `<span>${d.id}</span><span>${d.name}</span>`;
-                el.onclick = () => selectItem(d.id);
-                c.appendChild(el);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.body.appendChild(renderer.domElement);
+
+            // OrbitControlsの使用（動的読み込み済み）
+            const controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            // Texture
+            function createGlowTex() {
+                const c = document.createElement('canvas'); c.width=64; c.height=64;
+                const ctx = c.getContext('2d');
+                const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+                g.addColorStop(0, 'rgba(255,255,255,1)');
+                g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
+                g.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
+                return new THREE.CanvasTexture(c);
+            }
+            const glowTex = createGlowTex();
+            const interactables = [];
+            const idMap = {};
+
+            const mainGroup = new THREE.Group();
+            scene.add(mainGroup);
+
+            // ==========================================
+            // OBJECTS
+            // ==========================================
+
+            // A. OS CORE
+            const osGroup = new THREE.Group();
+            mainGroup.add(osGroup);
+            const coreGeo = new THREE.IcosahedronGeometry(15, 2);
+            const coreMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, wireframe: true, transparent: true, opacity: 0.1 });
+            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
+            osGroup.add(coreMesh);
+
+            DATA.OS.forEach((d, i) => {
+                const phi = Math.acos( -1 + ( 2 * i ) / 8 );
+                const theta = Math.sqrt( 8 * Math.PI ) * phi;
+                const r = 22;
+                const x = r * Math.cos(theta) * Math.sin(phi);
+                const y = r * Math.sin(theta) * Math.sin(phi);
+                const z = r * Math.cos(phi);
+                const pos = new THREE.Vector3(x, y, z);
+
+                const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: d.color }));
+                mesh.position.copy(pos);
+                mesh.userData = { type: 'OS', data: d };
+                
+                const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+                spr.scale.set(30,30,1);
+                mesh.add(spr);
+
+                osGroup.add(mesh);
+                interactables.push(mesh);
+                idMap[d.id] = mesh;
+            });
+
+            // B. COEFFICIENTS
+            const coefGroup = new THREE.Group();
+            mainGroup.add(coefGroup);
+            const coefObjs = [];
+
+            DATA.COEF.forEach((d, i) => {
+                const angle = (i / 8) * Math.PI * 2;
+                const rad = 80;
+                const x = Math.cos(angle) * rad;
+                const z = Math.sin(angle) * rad;
+                const pos = new THREE.Vector3(x, 0, z);
+
+                const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+                mesh.position.copy(pos);
+                mesh.userData = { type: 'COEF', data: d };
+
+                const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+                spr.scale.set(40,40,1);
+                mesh.add(spr);
+
+                coefGroup.add(mesh);
+                interactables.push(mesh);
+                coefObjs.push(mesh);
+                idMap[d.id] = mesh;
+            });
+
+            // C. CABLES
+            const cableGroup = new THREE.Group();
+            mainGroup.add(cableGroup);
+
+            coefObjs.forEach(target => {
+                const start = new THREE.Vector3(0,0,0);
+                const end = target.position;
+                const mid = start.clone().lerp(end, 0.5);
+                mid.y += 25;
+
+                const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
+                const pts = curve.getPoints(20);
+                const geo = new THREE.BufferGeometry().setFromPoints(pts);
+                const mat = new THREE.LineBasicMaterial({ color: target.userData.data.color, transparent: true, opacity: 0.3 });
+                cableGroup.add(new THREE.Line(geo, mat));
+            });
+
+            // D. DB MEMORY
+            const dbGroup = new THREE.Group();
+            mainGroup.add(dbGroup);
+
+            DATA.DB.forEach((d, i) => {
+                const angle = (i/4) * Math.PI * 2;
+                const x = Math.cos(angle)*50;
+                const z = Math.sin(angle)*50;
+                const pos = new THREE.Vector3(x, -80, z);
+
+                const pGeo = new THREE.Geometry();
+                for(let k=0; k<100; k++) {
+                    const s = 30;
+                    pGeo.vertices.push(new THREE.Vector3(
+                        pos.x+(Math.random()-0.5)*s, pos.y+(Math.random()-0.5)*s, pos.z+(Math.random()-0.5)*s
+                    ));
+                }
+                const pMat = new THREE.PointsMaterial({ color: d.color, size:2, map:glowTex, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false });
+                dbGroup.add(new THREE.Points(pGeo, pMat));
+
+                // Line to Brain
+                const lGeo = new THREE.Geometry();
+                lGeo.vertices.push(new THREE.Vector3(0,-20,0), pos);
+                const lMat = new THREE.LineBasicMaterial({color:d.color, transparent:true, opacity:0.15});
+                dbGroup.add(new THREE.Line(lGeo, lMat));
+
+                const box = new THREE.Mesh(new THREE.BoxGeometry(40,40,40), new THREE.MeshBasicMaterial({visible:false}));
+                box.position.copy(pos);
+                box.userData = { type: 'DB', data: d };
+                interactables.push(box);
+                idMap[d.id] = box;
+            });
+
+            // E. PULSE
+            const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
+            const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
+            pulseSpr.scale.set(20,20,1);
+            pulse.add(pulseSpr);
+            scene.add(pulse);
+
+            // ==========================================
+            // UI & INTERACTION
+            // ==========================================
+            function createMenu(containerId, list) {
+                const c = document.getElementById(containerId);
+                list.forEach(d => {
+                    const el = document.createElement('div');
+                    el.className = 'menu-item';
+                    el.innerHTML = `<span>${d.id}</span><span>${d.name}</span>`;
+                    el.onclick = () => selectItem(d.id);
+                    c.appendChild(el);
+                });
+            }
+            createMenu('list-os', DATA.OS);
+            createMenu('list-coef', DATA.COEF);
+            createMenu('list-db', DATA.DB);
+
+            const clock = new THREE.Clock();
+            const flowText = document.getElementById('flow-status');
+
+            // Auto Start Timer
+            setTimeout(() => { if(document.getElementById('loader').style.display !== 'none') forceStart(); }, 4000);
+
+            function animate(time) {
+                requestAnimationFrame(animate);
+                TWEEN.update(time);
+                controls.update();
+                
+                const delta = clock.getElapsedTime();
+                
+                // Organic Motion
+                osGroup.rotation.y = Math.sin(delta*0.1)*0.1;
+                const beat = 1 + Math.sin(delta*2)*0.03;
+                osGroup.scale.set(beat, beat, beat);
+                
+                coefGroup.rotation.y = delta * -0.1;
+                cableGroup.rotation.y = delta * -0.1; // Cables follow coefs
+
+                // Logic Flow
+                const t = delta % 8.0;
+                let target = new THREE.Vector3();
+                let col = 0xffffff;
+                let txt = "SYSTEM IDLE";
+
+                if (t < 1.5) {
+                    let p = t/1.5;
+                    target.set(0, 180*(1-p), 120*(1-p));
+                    txt = ">>> INPUT";
+                } else if (t < 3.5) {
+                    let p = (t-1.5)/2.0;
+                    let db = new THREE.Vector3(0,-80,0);
+                    if(p<0.5) target.lerpVectors(new THREE.Vector3(), db, p*2);
+                    else target.lerpVectors(db, new THREE.Vector3(), (p-0.5)*2);
+                    col = 0x0055FF;
+                    txt = "::: MEMORY SEARCH :::";
+                } else if (t < 5.5) {
+                    let p = (t-3.5)/2.0;
+                    target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(85,0,0), p);
+                    col = 0x00CCFF;
+                    txt = "/// CALCULATION ///";
+                } else {
+                    let p = (t-5.5)/2.5;
+                    target.lerpVectors(new THREE.Vector3(85,0,0), new THREE.Vector3(300,0,0), p);
+                    col = 0xFF3300;
+                    txt = "!!! OUTPUT !!!";
+                }
+
+                pulse.position.copy(target);
+                pulse.material.color.setHex(col);
+                pulseSpr.material.color.setHex(col);
+                flowText.innerText = txt;
+                flowText.style.color = '#' + col.toString(16).padStart(6,'0');
+
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            // Selection
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+
+            function selectItem(id) {
+                document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
+                const obj = idMap[id];
+                if(obj) {
+                    showPanel(obj.userData);
+                    // Camera Move
+                    const end = obj.position.clone().normalize().multiplyScalar(160);
+                    end.y += 30;
+                    new TWEEN.Tween(camera.position).to({x:end.x, y:end.y, z:end.z}, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+                }
+            }
+
+            window.addEventListener('mousedown', (e) => {
+                if(e.clientX < 220) return;
+                mouse.x = (e.clientX/window.innerWidth)*2-1;
+                mouse.y = -(e.clientY/window.innerHeight)*2+1;
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObjects(interactables);
+                if(hits.length>0) {
+                    const ud = hits[0].object.userData;
+                    selectItem(ud.data.id);
+                } else {
+                    document.getElementById('panel').classList.remove('active');
+                }
+            });
+
+            const pClose = document.getElementById('p-close');
+            pClose.onclick = () => document.getElementById('panel').classList.remove('active');
+
+            function showPanel(ud) {
+                const d = ud.data;
+                document.getElementById('p-tag').innerText = ud.type;
+                document.getElementById('p-title').innerText = d.name;
+                document.getElementById('p-title').style.color = '#' + new THREE.Color(d.color).getHexString();
+                document.getElementById('p-desc').innerText = d.desc;
+                document.getElementById('p-role').innerText = d.role;
+                document.getElementById('p-thought').innerText = d.thought;
+                document.getElementById('panel').classList.add('active');
+            }
+
+            window.addEventListener('resize', () => {
+                camera.aspect = window.innerWidth/window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
             });
         }
-        createMenu('list-os', DATA.OS);
-        createMenu('list-coef', DATA.COEF);
-        createMenu('list-db', DATA.DB);
-
-        const clock = new THREE.Clock();
-        const flowText = document.getElementById('flow-status');
-
-        // Auto Start Timer
-        setTimeout(() => { if(document.getElementById('loader').style.display !== 'none') forceStart(); }, 4000);
-
-        function animate(time) {
-            requestAnimationFrame(animate);
-            TWEEN.update(time);
-            controls.update();
-            
-            const delta = clock.getElapsedTime();
-            
-            // Organic Motion
-            osGroup.rotation.y = Math.sin(delta*0.1)*0.1;
-            const beat = 1 + Math.sin(delta*2)*0.03;
-            osGroup.scale.set(beat, beat, beat);
-            
-            coefGroup.rotation.y = delta * -0.1;
-            cableGroup.rotation.y = delta * -0.1; // Cables follow coefs
-
-            // Logic Flow
-            const t = delta % 8.0;
-            let target = new THREE.Vector3();
-            let col = 0xffffff;
-            let txt = "SYSTEM IDLE";
-
-            if (t < 1.5) {
-                let p = t/1.5;
-                target.set(0, 180*(1-p), 120*(1-p));
-                txt = ">>> INPUT";
-            } else if (t < 3.5) {
-                let p = (t-1.5)/2.0;
-                let db = new THREE.Vector3(0,-80,0);
-                if(p<0.5) target.lerpVectors(new THREE.Vector3(), db, p*2);
-                else target.lerpVectors(db, new THREE.Vector3(), (p-0.5)*2);
-                col = 0x0055FF;
-                txt = "::: MEMORY SEARCH :::";
-            } else if (t < 5.5) {
-                let p = (t-3.5)/2.0;
-                target.lerpVectors(new THREE.Vector3(), new THREE.Vector3(85,0,0), p);
-                col = 0x00CCFF;
-                txt = "/// CALCULATION ///";
-            } else {
-                let p = (t-5.5)/2.5;
-                target.lerpVectors(new THREE.Vector3(85,0,0), new THREE.Vector3(300,0,0), p);
-                col = 0xFF3300;
-                txt = "!!! OUTPUT !!!";
-            }
-
-            pulse.position.copy(target);
-            pulse.material.color.setHex(col);
-            pulseSpr.material.color.setHex(col);
-            flowText.innerText = txt;
-            flowText.style.color = '#' + col.toString(16).padStart(6,'0');
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // Selection
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        function selectItem(id) {
-            document.querySelectorAll('.menu-item').forEach(e => e.classList.remove('active'));
-            const obj = idMap[id];
-            if(obj) {
-                showPanel(obj.userData);
-                // Camera Move
-                const end = obj.position.clone().normalize().multiplyScalar(160);
-                end.y += 30;
-                new TWEEN.Tween(camera.position).to({x:end.x, y:end.y, z:end.z}, 1000).easing(TWEEN.Easing.Cubic.Out).start();
-            }
-        }
-
-        window.addEventListener('mousedown', (e) => {
-            if(e.clientX < 220) return;
-            mouse.x = (e.clientX/window.innerWidth)*2-1;
-            mouse.y = -(e.clientY/window.innerHeight)*2+1;
-            raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(interactables);
-            if(hits.length>0) {
-                const ud = hits[0].object.userData;
-                selectItem(ud.data.id);
-            } else {
-                document.getElementById('panel').classList.remove('active');
-            }
-        });
-
-        const pClose = document.getElementById('p-close');
-        pClose.onclick = () => document.getElementById('panel').classList.remove('active');
-
-        function showPanel(ud) {
-            const d = ud.data;
-            document.getElementById('p-tag').innerText = ud.type;
-            document.getElementById('p-title').innerText = d.name;
-            document.getElementById('p-title').style.color = '#' + new THREE.Color(d.color).getHexString();
-            document.getElementById('p-desc').innerText = d.desc;
-            document.getElementById('p-role').innerText = d.role;
-            document.getElementById('p-thought').innerText = d.thought;
-            document.getElementById('panel').classList.add('active');
-        }
-
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
     </script>
 </body>
 </html>
