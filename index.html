@@ -12,7 +12,7 @@
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 10000;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1); pointer-events: none;
+            transition: opacity 1s cubic-bezier(0.16, 1, 0.3, 1); cursor: pointer;
         }
         .logo-box { position: relative; text-align: center; }
         .logo-text {
@@ -26,8 +26,15 @@
         }
         .loading-line { width: 0%; height: 2px; background: #00ffff; margin-top: 30px; animation: loadLine 3s cubic-bezier(0.2,1,0.2,1) forwards; }
         
+        /* スタートボタン（クリック誘導） */
+        .start-hint {
+            margin-top: 50px; color: #555; font-size: 12px; letter-spacing: 2px;
+            animation: blink 2s infinite; opacity: 0; animation-delay: 3s; animation-fill-mode: forwards;
+        }
+        
         @keyframes fadeup { to { opacity: 1; } }
         @keyframes loadLine { to { width: 400px; } }
+        @keyframes blink { 0%,100%{opacity:0;} 50%{opacity:1;} }
         @keyframes glitch {
             0% { transform: translate(0); }
             1% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
@@ -134,11 +141,12 @@
 </head>
 <body>
 
-    <div id="loader">
+    <div id="loader" onclick="startSystem()">
         <div class="logo-box">
             <h1 class="logo-text">SONALIA</h1>
             <div class="logo-sub">LOGIC ARCHITECTURE v1.0</div>
             <div class="loading-line"></div>
+            <div class="start-hint">[ CLICK TO INITIALIZE ]</div>
         </div>
     </div>
 
@@ -187,6 +195,13 @@
     </div>
 
     <script>
+        // 強制スタート機能
+        function startSystem() {
+            const l = document.getElementById('loader');
+            l.style.opacity = 0;
+            setTimeout(() => { l.style.display = 'none'; }, 1000);
+        }
+
         // ==========================================
         // 0. SONALIA LOGIC DATA (Full Definition)
         // ==========================================
@@ -337,7 +352,6 @@
         });
 
         // --- C. NEURAL CABLES (OS <-> COEF) ---
-        // Thick tubes representing solid pathways
         const cableGroup = new THREE.Group();
         mainGroup.add(cableGroup);
 
@@ -430,17 +444,17 @@
         const lblPhase = document.getElementById('phase-lbl');
         const valPhase = document.getElementById('phase-val');
 
-        // Loading Done
+        // 自動で消える処理も念のため残す
         setTimeout(() => {
             const l = document.getElementById('loader');
-            l.style.opacity = 0;
-            setTimeout(()=>l.style.display='none', 1000);
-        }, 3000);
+            // クリックされずに4秒経ったら自動で消す
+            if(l.style.display !== 'none') startSystem();
+        }, 4000);
 
         function animate(time) {
             requestAnimationFrame(animate);
             TWEEN.update(time);
-            controls.update();
+            if(controls) controls.update();
             const delta = clock.getElapsedTime();
 
             // Organic Breathing
