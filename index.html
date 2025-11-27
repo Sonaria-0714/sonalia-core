@@ -467,3 +467,101 @@
                 status = "::: REFERENCING MEMORY & EMOTION :::";
                 colorHex = 0x0055FF;
             } else if (t < 4.5) {
+                const p = (t - 3.5) / 1.0;
+                const coefTarget = new THREE.Vector3(75, 0, 0);
+                targetPos.lerpVectors(new THREE.Vector3(), coefTarget, p);
+                status = "/// CALCULATING VECTOR (COEFFICIENTS) ///";
+                colorHex = 0x00CCFF;
+            } else {
+                const p = (t - 4.5) / 1.5;
+                targetPos.lerpVectors(new THREE.Vector3(75, 0, 0), new THREE.Vector3(280, 0, 0), p);
+                status = "!!! ACTION EXECUTED !!!";
+                colorHex = 0xFF3300;
+            }
+
+            pulse.position.copy(targetPos);
+            pulse.material.color.setHex(colorHex);
+            pulseGlow.material.color.setHex(colorHex);
+            
+            flowText.textContent = status;
+            flowText.style.color = '#' + new THREE.Color(colorHex).getHexString();
+            flowText.style.textShadow = `0 0 25px #${new THREE.Color(colorHex).getHexString()}`;
+
+            for(let i=trails.length-1; i>0; i--) {
+                trails[i].position.copy(trails[i-1].position);
+                trails[i].material.color.setHex(colorHex);
+            }
+            trails[0].position.copy(targetPos);
+
+            composer.render();
+        }
+
+        // ==========================================
+        // 5. INTERACTION
+        // ==========================================
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        window.addEventListener('pointerdown', (e) => {
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            
+            const intersects = raycaster.intersectObjects(interactables, true);
+            if(intersects.length > 0) {
+                let target = intersects[0].object;
+                while(!target.userData.data && target.parent) {
+                    target = target.parent;
+                }
+                if(target.userData.data) {
+                    showPanel(target.userData);
+                }
+            } else {
+                hidePanel();
+            }
+        });
+
+        const panel = document.getElementById('panel');
+        const pTag = document.getElementById('p-tag');
+        const pTitle = document.getElementById('p-title');
+        const pDesc = document.getElementById('p-desc');
+        const pRole = document.getElementById('p-role');
+        
+        function showPanel(ud) {
+            const d = ud.data;
+            pTag.textContent = ud.type;
+            pTitle.textContent = d.name;
+            pTitle.style.color = '#' + new THREE.Color(d.color).getHexString();
+            pDesc.innerText = d.desc;
+            pRole.textContent = d.role || "System Component";
+            panel.classList.add('active');
+        }
+        function hidePanel() {
+            panel.classList.remove('active');
+        }
+        document.getElementById('p-close').addEventListener('click', hidePanel);
+
+        function createGlowTexture() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64; canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.3, 'rgba(255,255,255,0.2)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = g;
+            ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(canvas);
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            composer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        animate();
+    </script>
+</body>
+</html>
