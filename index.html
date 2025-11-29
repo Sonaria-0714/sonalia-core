@@ -3,381 +3,351 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONALIA: KAMUI ARCHITECTURE</title>
+    <title>SONALIA: ZERO DEPENDENCY</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', Consolas, sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; cursor: default; }
         canvas { display: block; }
 
-        /* --- UI & LOADER --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
-            background: #000; z-index: 10000;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 1s; cursor: pointer;
-        }
-        .logo-box { text-align: center; }
-        .logo-text {
-            font-size: 4em; font-weight: bold; color: #fff; letter-spacing: 0.2em; margin: 0;
-            text-shadow: 0 0 30px rgba(0,255,255,0.8);
-            animation: glitch 3s infinite;
-        }
-        .logo-sub { color: #00ffff; letter-spacing: 0.5em; margin-top: 15px; font-size: 0.8em; }
-        .loading-bar { width: 200px; height: 2px; background: #333; margin-top: 30px; position: relative; }
-        .loading-progress { 
-            position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #00ffff; 
-            animation: load 3s forwards; box-shadow: 0 0 10px #00ffff;
-        }
-        .click-hint { margin-top: 20px; color: #666; font-size: 10px; animation: blink 1s infinite; letter-spacing: 2px; }
+        /* --- UI OVERLAY --- */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
-        @keyframes load { to { width: 100%; } }
-        @keyframes glitch { 
-            0%, 100% { transform: translate(0); } 
-            2% { transform: translate(-2px, 2px); } 
-            4% { transform: translate(2px, -2px); } 
+        #hud-title {
+            position: absolute; top: 30px; left: 30px;
+            border-left: 4px solid #00ffff; padding-left: 20px;
+            background: linear-gradient(90deg, rgba(0,20,30,0.8), transparent);
         }
-        @keyframes blink { 50% { opacity: 0; } }
+        h1 { margin: 0; font-size: 28px; color: #fff; text-shadow: 0 0 15px #00ffff; letter-spacing: 2px; }
+        p { margin: 5px 0 0; color: #00ffff; font-size: 12px; letter-spacing: 1px; font-family: monospace; }
 
-        /* --- ERROR LOG --- */
-        #error-log {
-            position: absolute; top: 10px; left: 10px; color: #ff3333; font-family: monospace; font-size: 12px;
-            background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid red; display: none; z-index: 20000;
+        #hud-status {
+            position: absolute; top: 30px; right: 30px;
+            background: rgba(20,0,30,0.8); border: 1px solid #d000ff; color: #e0b0ff;
+            padding: 5px 15px; border-radius: 20px; font-size: 12px; letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(200,0,255,0.3);
         }
 
-        /* --- SIDE MENU --- */
-        #side-menu {
-            position: absolute; top: 0; left: 0; width: 220px; height: 100%;
-            background: rgba(0, 5, 10, 0.85); border-right: 1px solid rgba(0,255,255,0.2);
-            overflow-y: auto; z-index: 100; padding: 20px 0;
-            backdrop-filter: blur(5px);
+        #hud-flow {
+            position: absolute; bottom: 30px; width: 100%; text-align: center;
+            color: #88aaff; font-size: 14px; letter-spacing: 3px; font-family: monospace;
+            text-shadow: 0 0 10px rgba(0,100,255,0.5);
         }
-        .menu-header {
-            font-size: 10px; color: #00ffff; padding: 5px 20px; letter-spacing: 2px; font-weight: bold;
-            border-bottom: 1px solid rgba(0,255,255,0.2); margin: 20px 0 5px;
-        }
-        .menu-item {
-            padding: 8px 20px; color: #888; font-size: 11px; cursor: pointer; transition: 0.2s;
-            border-left: 2px solid transparent; font-family: monospace; display: flex; justify-content: space-between;
-        }
-        .menu-item:hover { color: #fff; background: rgba(0,255,255,0.1); }
-        .menu-item.active { color: #fff; border-left: 2px solid #00ffff; background: rgba(0,255,255,0.15); }
 
         /* --- INFO PANEL --- */
         #panel {
-            position: absolute; top: 0; right: 0; width: 400px; height: 100%;
-            background: rgba(10, 14, 18, 0.95); border-left: 1px solid #333;
-            transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.19, 1, 0.22, 1);
-            color: #eee; display: flex; flex-direction: column; z-index: 100;
-            box-shadow: -20px 0 50px rgba(0,0,0,0.8);
+            position: absolute; top: 0; right: 0; width: 360px; height: 100%;
+            background: rgba(5,8,12,0.95); border-left: 1px solid #333;
+            transform: translateX(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            color: #eee; display: flex; flex-direction: column; z-index: 20; pointer-events: auto;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.9);
         }
         #panel.active { transform: translateX(0); }
-        .p-header { padding: 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.05), transparent); }
-        .p-tag { font-size: 10px; background: #00ffff; color: #000; padding: 2px 6px; border-radius: 2px; font-weight: bold; }
-        .p-title { font-size: 24px; margin: 10px 0 0; color: #fff; text-shadow: 0 0 10px currentColor; }
-        .p-body { padding: 30px; overflow-y: auto; flex: 1; }
         
-        .data-box { margin-bottom: 25px; }
-        .data-label { font-size: 10px; color: #00ffff; border-bottom: 1px solid #333; display: block; margin-bottom: 5px; }
-        .data-val { font-size: 13px; line-height: 1.6; color: #ccc; }
-        .data-thought { font-family: monospace; color: #fff; background: rgba(255,255,255,0.05); padding: 10px; border-left: 2px solid #00ffff; }
+        .p-head { padding: 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
+        .p-tag { font-size: 10px; background: #00ffff; color: #000; padding: 3px 8px; border-radius: 2px; font-weight: bold; }
+        .p-title { font-size: 24px; margin: 15px 0 0; color: #fff; text-shadow: 0 0 10px currentColor; }
+        
+        .p-body { padding: 30px; overflow-y: auto; flex: 1; }
+        .row { margin-bottom: 25px; }
+        .label { font-size: 10px; color: #00ffff; border-bottom: 1px solid #333; display: block; margin-bottom: 5px; }
+        .text { font-size: 13px; line-height: 1.6; color: #ccc; }
+        .thought { font-family: monospace; color: #fff; background: rgba(0,255,255,0.05); padding: 15px; border-left: 3px solid #00ffff; border-radius: 0 4px 4px 0; }
 
-        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
+        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; transition: 0.2s; }
         .close-btn:hover { color: #fff; }
 
-        /* --- STATUS HUD --- */
-        #flow-status {
-            position: absolute; bottom: 30px; left: 240px; right: 20px; text-align: center;
-            font-family: monospace; font-size: 14px; color: #00ffff; text-shadow: 0 0 10px rgba(0,255,255,0.5);
-            pointer-events: none;
+        /* --- LOADER --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
+            display: flex; align-items: center; justify-content: center; flex-direction: column;
+            transition: opacity 0.5s; cursor: pointer;
         }
-
-        @media(max-width: 800px) {
-            #side-menu { width: 60px; }
-            .menu-item span:last-child { display: none; }
-            .menu-header { display: none; }
-            #panel { width: 100%; }
-            #flow-status { left: 0; bottom: 10px; font-size: 10px; }
-        }
+        .load-title { font-size: 40px; color: #fff; font-weight: bold; letter-spacing: 10px; text-shadow: 0 0 20px #00ffff; margin: 0; }
+        .load-sub { color: #00ffff; font-family: monospace; margin-top: 15px; letter-spacing: 2px; animation: blink 1s infinite; font-size: 12px; }
+        @keyframes blink { 50% { opacity: 0.4; } }
     </style>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
-    
-    <script>
-        // OrbitControlsをCDNから読み込むための動的スクリプトタグ
-        const script = document.createElement('script');
-        script.src = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
-        script.onload = function() {
-            // ライブラリ読み込み完了後にメイン処理を開始
-            initApp();
-        };
-        script.onerror = function() {
-            document.getElementById('error-log').style.display = 'block';
-            document.getElementById('error-log').innerHTML = "Error: Failed to load OrbitControls.";
-        };
-        document.head.appendChild(script);
-    </script>
 </head>
 <body>
 
-    <div id="loader" onclick="forceStart()">
-        <div id="error-log"></div>
-        <div class="logo-box">
-            <h1 class="logo-text">SONALIA</h1>
-            <div class="logo-sub">NEURAL ARCHITECTURE</div>
-            <div class="loading-bar"><div class="loading-progress"></div></div>
-            <div class="click-hint">[ CLICK TO START ]</div>
+    <div id="loader" onclick="startSystem()">
+        <div class="load-title">SONALIA</div>
+        <div class="load-sub">SYSTEM READY [CLICK TO START]</div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="hud-title">
+            <h1>思考回路マップ</h1>
+            <p>4層OS × 内面DB × 8係数</p>
+        </div>
+        <div id="hud-status">Kamui Architecture</div>
+        <div id="hud-flow">
+            現在（入力・意味付け） ▶▶▶ 未来（選択・行動）
         </div>
     </div>
 
-    <div id="side-menu">
-        <div class="menu-header">/// 8 OS</div>
-        <div id="list-os"></div>
-        <div class="menu-header">/// 8 FACTORS</div>
-        <div id="list-coef"></div>
-        <div class="menu-header">/// 4 MEMORY DB</div>
-        <div id="list-db"></div>
-    </div>
-
-    <div id="flow-status">SYSTEM INITIALIZED</div>
-
     <div id="panel">
-        <div class="close-btn" id="p-close">×</div>
-        <div class="p-header">
+        <div class="close-btn" onclick="closePanel()">×</div>
+        <div class="p-head">
             <span class="p-tag" id="p-tag">TAG</span>
             <h2 class="p-title" id="p-title">Title</h2>
         </div>
         <div class="p-body">
-            <div class="data-box">
-                <span class="data-label">DEFINITION</span>
-                <div class="data-val" id="p-desc">...</div>
-            </div>
-            <div class="data-box">
-                <span class="data-label">SYSTEM ROLE</span>
-                <div class="data-val" id="p-role">...</div>
-            </div>
-            <div class="data-box">
-                <span class="data-label">INTERNAL THOUGHT</span>
-                <div class="data-thought" id="p-thought">...</div>
-            </div>
+            <div class="row"><span class="label">DEFINITION</span><div class="text" id="p-desc">...</div></div>
+            <div class="row"><span class="label">SYSTEM ROLE</span><div class="text" id="p-role">...</div></div>
+            <div class="row"><span class="label">INTERNAL VOICE</span><div class="thought" id="p-thought">...</div></div>
         </div>
     </div>
 
-    <script>
-        // エラーハンドリング
-        window.onerror = function(msg, url, line) {
-            const el = document.getElementById('error-log');
-            el.style.display = 'block';
-            el.innerHTML += "Error: " + msg + "<br>";
-        };
+    <canvas id="canvas"></canvas>
 
-        // 強制スタート機能
-        window.forceStart = function() {
+    <script>
+        // --- DATA DEFINITION ---
+        const NODES = [
+            // Left (OS) - Cyan/Green
+            { id:"OS1", type:"OS(1層)", name:"生存OS", color:"#00FFFF", x:-180, y:-80, z:0, desc:"危険回避・安全確保。", role:"リスク管理", thought:"「危なくないか？」" },
+            { id:"OS2", type:"OS(1層)", name:"生活OS", color:"#00FF88", x:-180, y:80, z:0, desc:"ルーティン維持・変化適応。", role:"習慣維持", thought:"「いつものパターン？」" },
+            { id:"OS3", type:"OS(2層)", name:"評価OS", color:"#0088FF", x:-120, y:-40, z:-60, desc:"善悪・ルールの判定。", role:"善悪判断", thought:"「それは正しいか？」" },
+            { id:"OS4", type:"OS(2層)", name:"所属OS", color:"#FF8800", x:-120, y:40, z:-60, desc:"集団帰属・疎外感回避。", role:"集団帰属", thought:"「浮いてないか？」" },
+            { id:"OS5", type:"OS(3層)", name:"報酬OS", color:"#FFD700", x:-120, y:-40, z:60, desc:"損得・コスパ計算。", role:"損得勘定", thought:"「損しないか？」" },
+            { id:"OS6", type:"OS(3層)", name:"意味OS", color:"#AA00FF", x:-120, y:40, z:60, desc:"意義・自己実現。", role:"意義探求", thought:"「どんな意味がある？」" },
+            { id:"OS7", type:"OS(4層)", name:"時間OS", color:"#00FFFF", x:-60, y:-120, z:0, desc:"過去経験・未来予測。", role:"時間参照", thought:"「将来どうなる？」" },
+            { id:"OS8", type:"OS(4層)", name:"協調OS", color:"#FF00AA", x:-60, y:120, z:0, desc:"利害バランス調整。", role:"利害調整", thought:"「相手はどう思う？」" },
+            
+            // Left (DB) - Deep Center
+            { id:"DB1", type:"DB", name:"欲求DB", color:"#FF4400", x:-280, y:60, z:0, desc:"根源的渇望。", role:"Motivation", thought:"(Deep Desire)" },
+            { id:"DB2", type:"DB", name:"情動DB", color:"#0044FF", x:-280, y:-60, z:0, desc:"感情記憶。", role:"Emotion", thought:"(Flashback)" },
+            { id:"DB3", type:"DB", name:"価値観DB", color:"#FFCC00", x:-240, y:0, z:80, desc:"信念・ルール。", role:"Belief", thought:"(Core Rules)" },
+            { id:"DB4", type:"DB", name:"無意識DB", color:"#888888", x:-240, y:0, z:-80, desc:"反射的クセ。", role:"Auto-Pilot", thought:"(Reflex)" },
+
+            // Right (Coef) - Purple/Pink
+            { id:"IQ", type:"係数", name:"IQ(論理)", color:"#00CCFF", x:100, y:-80, z:0, desc:"情報構造化・論理力。", role:"Logic Engine", thought:"分析・分解" },
+            { id:"EQ", type:"係数", name:"EQ(感情)", color:"#FF6666", x:100, y:80, z:0, desc:"感情察知・共感力。", role:"Empathy", thought:"共感・配慮" },
+            { id:"SQ", type:"係数", name:"SQ(社会)", color:"#FFCC00", x:160, y:-40, z:60, desc:"関係構築・適応力。", role:"Social Net", thought:"適応・交渉" },
+            { id:"AQ", type:"係数", name:"AQ(逆境)", color:"#888888", x:160, y:40, z:60, desc:"ストレス耐性。", role:"Resilience", thought:"耐久・忍耐" },
+            { id:"CQ", type:"係数", name:"CQ(創造)", color:"#AA00FF", x:160, y:-40, z:-60, desc:"好奇心・発想力。", role:"Innovator", thought:"発想・着眼" },
+            { id:"HQ", type:"係数", name:"HQ(人間)", color:"#FFFFFF", x:160, y:40, z:-60, desc:"誠実さ・公平性。", role:"Ethical", thought:"誠実・信頼" },
+            { id:"MQ", type:"係数", name:"MQ(行動)", color:"#FF3300", x:220, y:0, z:90, desc:"実行スピード。", role:"Activator", thought:"即断・実行" },
+            { id:"KQ", type:"係数", name:"KQ(知識)", color:"#00FF88", x:220, y:0, z:-90, desc:"知識活用力。", role:"Knowledge", thought:"応用・転用" },
+            
+            // Center Core
+            { id:"CORE", type:"CORE", name:"現在", color:"#FFFFFF", x:0, y:0, z:0, desc:"思考の中心点。", role:"Self", thought:"..." }
+        ];
+
+        // --- 1. ENGINE SETUP ---
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let angleX = 0, angleY = 0; // Rotation angles
+        let mouseX = 0, mouseY = 0;
+        let isMouseDown = false;
+
+        // 3D Point Class
+        class Point {
+            constructor(d) {
+                this.x = d.x; this.y = d.y; this.z = d.z;
+                this.color = d.color;
+                this.data = d;
+                this.screenX = 0; this.screenY = 0; this.scale = 0;
+            }
+            project(cx, cy, fov) {
+                // Rotation
+                let x = this.x * Math.cos(angleY) - this.z * Math.sin(angleY);
+                let z = this.z * Math.cos(angleY) + this.x * Math.sin(angleY);
+                let y = this.y * Math.cos(angleX) - z * Math.sin(angleX);
+                z = z * Math.cos(angleX) + this.y * Math.sin(angleX);
+                
+                // Perspective
+                const scale = fov / (fov + z + 600);
+                this.screenX = x * scale + cx;
+                this.screenY = y * scale + cy;
+                this.scale = scale;
+                this.depth = z; // Store depth for sorting
+            }
+        }
+
+        const points = NODES.map(d => new Point(d));
+        const particles = []; // Flow particles
+
+        // Particle Init
+        for(let i=0; i<40; i++) {
+            particles.push({
+                x: -400 + Math.random()*200, y: (Math.random()-0.5)*200, z: (Math.random()-0.5)*200,
+                speed: 3 + Math.random()*3, size: Math.random()*2
+            });
+        }
+
+        // --- 2. MAIN LOOP ---
+        function loop() {
+            // Background
+            ctx.fillStyle = "#000005";
+            ctx.fillRect(0, 0, width, height);
+            
+            const cx = width / 2;
+            const cy = height / 2;
+            const fov = 600;
+
+            // Rotate
+            if(!isMouseDown) {
+                angleY += 0.002;
+            } else {
+                angleY += (mouseX - width/2) * 0.00005;
+                angleX += (mouseY - height/2) * 0.00005;
+            }
+
+            // Project all points first
+            points.forEach(p => p.project(cx, cy, fov));
+            
+            // Draw Connections (Lines)
+            ctx.lineWidth = 1;
+            for(let i=0; i<points.length; i++) {
+                for(let j=i+1; j<points.length; j++) {
+                    const p1 = points[i];
+                    const p2 = points[j];
+                    
+                    // Simple distance check in 3D space
+                    const dx = p1.x - p2.x;
+                    const dy = p1.y - p2.y;
+                    const dz = p1.z - p2.z;
+                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
+
+                    // Connect logic: Close neighbors OR center connections
+                    if (dist < 130 || (p1.data.type === 'CORE' && p2.x !== 0)) {
+                        const alpha = Math.max(0, (1 - dist/200) * 0.4);
+                        if(alpha > 0) {
+                            const grad = ctx.createLinearGradient(p1.screenX, p1.screenY, p2.screenX, p2.screenY);
+                            grad.addColorStop(0, hexToRgba(p1.color, alpha));
+                            grad.addColorStop(1, hexToRgba(p2.color, alpha));
+                            ctx.strokeStyle = grad;
+                            ctx.beginPath();
+                            ctx.moveTo(p1.screenX, p1.screenY);
+                            ctx.lineTo(p2.screenX, p2.screenY);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+
+            // Draw Particles (Flow Effect)
+            ctx.fillStyle = "#fff";
+            particles.forEach(p => {
+                p.x += p.speed;
+                if(p.x > 400) p.x = -400; // Reset
+                
+                // Manual projection for particle
+                let x = p.x * Math.cos(angleY) - p.z * Math.sin(angleY);
+                let z = p.z * Math.cos(angleY) + p.x * Math.sin(angleY);
+                let y = p.y * Math.cos(angleX) - z * Math.sin(angleX);
+                z = z * Math.cos(angleX) + p.y * Math.sin(angleX);
+                
+                const s = fov / (fov + z + 600);
+                const sx = x * s + cx;
+                const sy = y * s + cy;
+                
+                ctx.globalAlpha = 0.6;
+                ctx.beginPath();
+                ctx.arc(sx, sy, p.size * s, 0, Math.PI*2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1.0;
+
+            // Draw Nodes (Sorted by depth for proper occlusion)
+            const sortedPoints = [...points].sort((a, b) => b.depth - a.depth);
+            
+            sortedPoints.forEach(p => {
+                const r = (p.data.type === 'CORE' ? 15 : 6) * p.scale;
+                
+                // Glow
+                const glowR = r * 4;
+                const grad = ctx.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, glowR);
+                grad.addColorStop(0, hexToRgba(p.color, 0.8));
+                grad.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(p.screenX, p.screenY, glowR, 0, Math.PI*2);
+                ctx.fill();
+
+                // Solid Core
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(p.screenX, p.screenY, r, 0, Math.PI*2);
+                ctx.fill();
+
+                // Text
+                if(p.data.type !== 'CORE') {
+                    ctx.fillStyle = "#fff";
+                    ctx.font = `${Math.max(8, 10 * p.scale)}px Arial`;
+                    ctx.textAlign = "center";
+                    ctx.fillText(p.data.name, p.screenX, p.screenY + r + 12);
+                }
+            });
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- 3. UTILS & EVENTS ---
+        function hexToRgba(hex, alpha) {
+            const r = parseInt(hex.slice(1, 3), 16);
+            const g = parseInt(hex.slice(3, 5), 16);
+            const b = parseInt(hex.slice(5, 7), 16);
+            return `rgba(${r},${g},${b},${alpha})`;
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        
+        window.addEventListener('mousemove', e => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+        });
+        
+        window.addEventListener('mousedown', e => {
+            isMouseDown = true;
+            // Click Detection
+            const sorted = [...points].sort((a, b) => a.depth - b.depth); // Front first
+            for(let p of sorted) {
+                const dx = e.clientX - p.screenX;
+                const dy = e.clientY - p.screenY;
+                if(Math.sqrt(dx*dx + dy*dy) < 30 * p.scale) {
+                    showPanel(p.data);
+                    isMouseDown = false; // Stop rotation drag if clicked
+                    break;
+                }
+            }
+        });
+        window.addEventListener('mouseup', () => isMouseDown = false);
+
+        // --- UI LOGIC ---
+        function showPanel(d) {
+            document.getElementById('p-tag').innerText = d.type;
+            document.getElementById('p-tag').style.background = d.color;
+            document.getElementById('p-title').innerText = d.name;
+            document.getElementById('p-title').style.color = d.color;
+            document.getElementById('p-desc').innerText = d.desc;
+            document.getElementById('p-role').innerText = d.role;
+            document.getElementById('p-thought').innerText = d.thought;
+            document.getElementById('panel').classList.add('active');
+        }
+        function closePanel() {
+            document.getElementById('panel').classList.remove('active');
+        }
+        window.closePanel = closePanel;
+
+        function startSystem() {
             const l = document.getElementById('loader');
             l.style.opacity = 0;
-            setTimeout(() => { l.style.display = 'none'; }, 1000);
-        };
+            setTimeout(() => { l.style.display = 'none'; }, 500);
+        }
+        window.startSystem = startSystem;
 
-        // アプリ初期化関数（ライブラリ読み込み後に実行）
-        function initApp() {
-            // ライブラリチェック
-            if (typeof THREE === 'undefined') {
-                throw new Error("Three.js failed to load. Check connection.");
-            }
+        // --- INIT ---
+        resize();
+        loop();
+        
+        // Auto start if no click after 2s
+        setTimeout(startSystem, 2000);
 
-            // ==========================================
-            // DATA DEFINITION
-            // ==========================================
-            const DATA = {
-                OS: [
-                    { id: "SURVIVAL", name: "生存OS", color: 0xFF3333, desc: "【危険 ↔ 安全】を判断するレンズ。最優先でリスクを回避し、生命と生活の維持を図る。", role: "リスクマネジメント", thought: "「危なくないか？最悪どうなる？」" },
-                    { id: "LIFE",     name: "生活OS", color: 0x33FF33, desc: "【既知 ↔ 未知】を判断するレンズ。ルーティンの維持、あるいは新しい変化への適応を司る。", role: "習慣維持・環境適応", thought: "「いつものパターンか？新しいか？」" },
-                    { id: "EVAL",     name: "評価OS", color: 0x3388FF, desc: "【善 ↔ 悪】を判断するレンズ。正義、ルール、マナー、道徳的に正しいかを採点する。", role: "善悪判断・規律維持", thought: "「それは正しいか？許されるか？」" },
-                    { id: "BELONG",   name: "所属OS", color: 0xFF8833, desc: "【内 ↔ 外】を判断するレンズ。集団の中にいるか、仲間外れになっていないかを確認する。", role: "集団帰属・疎外感回避", thought: "「ここにいていいのか？浮いてないか？」" },
-                    { id: "REWARD",   name: "報酬OS", color: 0xFFD700, desc: "【損 ↔ 得】を判断するレンズ。コストパフォーマンス、利益、時間的メリットを計算する。", role: "損得勘定・効率化", thought: "「やる価値あるか？元は取れるか？」" },
-                    { id: "MEANING",  name: "意味OS", color: 0x9933FF, desc: "【意義 ↔ 無意味】を判断するレンズ。自分の人生にとって意味があるか、誇れるかを問う。", role: "意義の探求", thought: "「どんな意味がある？誇れるか？」" },
-                    { id: "TIME",     name: "時間OS", color: 0x00FFFF, desc: "【過去 ↔ 未来】を判断するレンズ。過去の経験則か、未来の予測か、時間軸で捉える。", role: "過去参照・未来予測", thought: "「前もこうだった」「将来どうなる？」" },
-                    { id: "HARMONY",  name: "協調OS", color: 0xFF66AA, desc: "【自分 ↔ 他人】を判断するレンズ。自分の意志を通すか、全体のために譲るかのバランス調整。", role: "利害調整・調和", thought: "「相手はどう思う？丸く収まるか？」" }
-                ],
-                COEF: [
-                    { id: "IQ", name: "IQ (論理)", color: 0x00CCFF, desc: "情報を構造化し、ロジックを組む力。", role: "Logic Engine", thought: "分析・分解・構造化" },
-                    { id: "EQ", name: "EQ (感情)", color: 0xFF6666, desc: "感情を読み取り、配慮する力。", role: "Empathy Core", thought: "共感・配慮・空気解読" },
-                    { id: "SQ", name: "SQ (社会)", color: 0xFFCC00, desc: "関係性をつくり、維持し、場に適応する力。", role: "Social Net", thought: "適応・人脈・交渉" },
-                    { id: "AQ", name: "AQ (逆境)", color: 0x888888, desc: "ストレスや失敗から立ち直る力。", role: "Resilience", thought: "回復・忍耐・再起" },
-                    { id: "CQ", name: "CQ (創造)", color: 0xAA00FF, desc: "新しいアイデアや工夫を生む力。", role: "Innovator", thought: "好奇心・発想・着眼" },
-                    { id: "HQ", name: "HQ (人間)", color: 0xFFFFFF, desc: "誠実さや公平さを保つ倫理観。", role: "Ethical Core", thought: "誠実・公平・信頼" },
-                    { id: "MQ", name: "MQ (行動)", color: 0xFF3300, desc: "実際の行動に移すスピードと量。", role: "Activator", thought: "即断・即決・実行" },
-                    { id: "KQ", name: "KQ (知識)", color: 0x00FF88, desc: "知識・経験を取り出して使う力。", role: "Library", thought: "応用・転用・蓄積" }
-                ],
-                DB: [
-                    { id:"DESIRE", name: "欲求DB", color: 0xFF5500, desc: "「〜したい」という根源的渇望。", role: "Drive Source", thought: "Deep Desire" },
-                    { id:"EMOTION", name: "情動DB", color: 0x0055FF, desc: "「快・不快」などの感情記憶。", role: "Affective Mem", thought: "Flashback" },
-                    { id:"VALUE", name: "価値観DB", color: 0xFFD700, desc: "「〜すべき」という信念・ルール。", role: "Belief System", thought: "Core Rules" },
-                    { id:"IMPLICIT", name: "無意識DB", color: 0x666666, desc: "習慣や反射行動のログ。", role: "Auto Pilot", thought: "Habits" }
-                ]
-            };
-
-            // ==========================================
-            // 3D SCENE SETUP
-            // ==========================================
-            const scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.0015);
-
-            const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
-            camera.position.set(0, 50, 280);
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            document.body.appendChild(renderer.domElement);
-
-            // OrbitControlsの使用（動的読み込み済み）
-            const controls = new THREE.OrbitControls(camera, renderer.domElement);
-            controls.enableDamping = true;
-            controls.autoRotate = true;
-            controls.autoRotateSpeed = 0.5;
-
-            // Texture
-            function createGlowTex() {
-                const c = document.createElement('canvas'); c.width=64; c.height=64;
-                const ctx = c.getContext('2d');
-                const g = ctx.createRadialGradient(32,32,0, 32,32,32);
-                g.addColorStop(0, 'rgba(255,255,255,1)');
-                g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
-                g.addColorStop(1, 'rgba(0,0,0,0)');
-                ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
-                return new THREE.CanvasTexture(c);
-            }
-            const glowTex = createGlowTex();
-            const interactables = [];
-            const idMap = {};
-
-            const mainGroup = new THREE.Group();
-            scene.add(mainGroup);
-
-            // ==========================================
-            // OBJECTS
-            // ==========================================
-
-            // A. OS CORE
-            const osGroup = new THREE.Group();
-            mainGroup.add(osGroup);
-            const coreGeo = new THREE.IcosahedronGeometry(15, 2);
-            const coreMat = new THREE.MeshBasicMaterial({ color: 0x0044aa, wireframe: true, transparent: true, opacity: 0.1 });
-            const coreMesh = new THREE.Mesh(coreGeo, coreMat);
-            osGroup.add(coreMesh);
-
-            DATA.OS.forEach((d, i) => {
-                const phi = Math.acos( -1 + ( 2 * i ) / 8 );
-                const theta = Math.sqrt( 8 * Math.PI ) * phi;
-                const r = 22;
-                const x = r * Math.cos(theta) * Math.sin(phi);
-                const y = r * Math.sin(theta) * Math.sin(phi);
-                const z = r * Math.cos(phi);
-                const pos = new THREE.Vector3(x, y, z);
-
-                const mesh = new THREE.Mesh(new THREE.SphereGeometry(2.5), new THREE.MeshBasicMaterial({ color: d.color }));
-                mesh.position.copy(pos);
-                mesh.userData = { type: 'OS', data: d };
-                
-                const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-                spr.scale.set(30,30,1);
-                mesh.add(spr);
-
-                osGroup.add(mesh);
-                interactables.push(mesh);
-                idMap[d.id] = mesh;
-            });
-
-            // B. COEFFICIENTS
-            const coefGroup = new THREE.Group();
-            mainGroup.add(coefGroup);
-            const coefObjs = [];
-
-            DATA.COEF.forEach((d, i) => {
-                const angle = (i / 8) * Math.PI * 2;
-                const rad = 80;
-                const x = Math.cos(angle) * rad;
-                const z = Math.sin(angle) * rad;
-                const pos = new THREE.Vector3(x, 0, z);
-
-                const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
-                mesh.position.copy(pos);
-                mesh.userData = { type: 'COEF', data: d };
-
-                const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
-                spr.scale.set(40,40,1);
-                mesh.add(spr);
-
-                coefGroup.add(mesh);
-                interactables.push(mesh);
-                coefObjs.push(mesh);
-                idMap[d.id] = mesh;
-            });
-
-            // C. CABLES
-            const cableGroup = new THREE.Group();
-            mainGroup.add(cableGroup);
-
-            coefObjs.forEach(target => {
-                const start = new THREE.Vector3(0,0,0);
-                const end = target.position;
-                const mid = start.clone().lerp(end, 0.5);
-                mid.y += 25;
-
-                const curve = new THREE.QuadraticBezierCurve3(start, mid, end);
-                const pts = curve.getPoints(20);
-                const geo = new THREE.BufferGeometry().setFromPoints(pts);
-                const mat = new THREE.LineBasicMaterial({ color: target.userData.data.color, transparent: true, opacity: 0.3 });
-                cableGroup.add(new THREE.Line(geo, mat));
-            });
-
-            // D. DB MEMORY
-            const dbGroup = new THREE.Group();
-            mainGroup.add(dbGroup);
-
-            DATA.DB.forEach((d, i) => {
-                const angle = (i/4) * Math.PI * 2;
-                const x = Math.cos(angle)*50;
-                const z = Math.sin(angle)*50;
-                const pos = new THREE.Vector3(x, -80, z);
-
-                const pGeo = new THREE.Geometry();
-                for(let k=0; k<100; k++) {
-                    const s = 30;
-                    pGeo.vertices.push(new THREE.Vector3(
-                        pos.x+(Math.random()-0.5)*s, pos.y+(Math.random()-0.5)*s, pos.z+(Math.random()-0.5)*s
-                    ));
-                }
-                const pMat = new THREE.PointsMaterial({ color: d.color, size:2, map:glowTex, transparent:true, opacity:0.6, blending:THREE.AdditiveBlending, depthWrite:false });
-                dbGroup.add(new THREE.Points(pGeo, pMat));
-
-                // Line to Brain
-                const lGeo = new THREE.Geometry();
-                lGeo.vertices.push(new THREE.Vector3(0,-20,0), pos);
-                const lMat = new THREE.LineBasicMaterial({color:d.color, transparent:true, opacity:0.15});
-                dbGroup.add(new THREE.Line(lGeo, lMat));
-
-                const box = new THREE.Mesh(new THREE.BoxGeometry(40,40,40), new THREE.MeshBasicMaterial({visible:false}));
-                box.position.copy(pos);
-                box.userData = { type: 'DB', data: d };
-                interactables.push(box);
-                idMap[d.id] = box;
-            });
-
-            // E. PULSE
-            const pulse = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
-            const pulseSpr = new THREE.Sprite(new THREE.SpriteMaterial({map: glowTex, color: 0xffffff, blending: THREE.AdditiveBlending}));
-            pulseSpr.scale.set(20,20,1);
-            pulse.add(pulseSpr);
-            scene.add(pulse);
-
-            // ==========================================
-            // UI & INTERACTION
-            // ==========================================
-            function createMenu(containerId, list) {
-                const c = document.getElementById(containerId);
-                list.forEach(d => {
-                    const el = document.createElement('div');
-                    el.className = 'menu-item';
-                    el.innerHTML = `<span>${d.id}</span><span>${d.name}</span>`;
-                    el.onclick = () =>
+    </script>
+</body>
+</html>
