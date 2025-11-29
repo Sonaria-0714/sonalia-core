@@ -3,74 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONALIA: ZERO DEPENDENCY</title>
+    <title>SONALIA: KAMUI CORE</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', 'Helvetica Neue', sans-serif; cursor: default; }
-        canvas { display: block; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
+        canvas { display: block; position: absolute; top: 0; left: 0; z-index: 1; }
 
-        /* --- UI OVERLAY --- */
+        /* --- エラー表示エリア (非常用) --- */
+        #error-console {
+            position: fixed; top: 0; left: 0; width: 100%; background: rgba(50,0,0,0.9); 
+            color: #ffaaaa; font-family: monospace; font-size: 12px; padding: 10px; 
+            z-index: 99999; display: none; white-space: pre-wrap;
+        }
+
+        /* --- ローディング画面 --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: #000; z-index: 9999; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.8s;
+        }
+        .logo { 
+            font-size: 40px; font-weight: bold; color: #fff; letter-spacing: 5px; 
+            text-shadow: 0 0 20px #00ffff; margin-bottom: 20px;
+        }
+        .loading-text { color: #00ffff; font-family: monospace; font-size: 14px; animation: blink 1s infinite; }
+        .tap-hint { margin-top: 30px; border: 1px solid #00ffff; color: #00ffff; padding: 10px 20px; border-radius: 30px; font-size: 12px; }
+        
+        @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* --- UIレイヤー --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-
+        
         #hud-title {
-            position: absolute; top: 30px; left: 30px;
-            border-left: 4px solid #00ffff; padding-left: 20px;
+            position: absolute; top: 30px; left: 30px; pointer-events: auto;
+            border-left: 4px solid #00ffff; padding-left: 15px;
             background: linear-gradient(90deg, rgba(0,20,30,0.8), transparent);
         }
-        h1 { margin: 0; font-size: 28px; color: #fff; text-shadow: 0 0 15px #00ffff; letter-spacing: 2px; }
-        p { margin: 5px 0 0; color: #00ffff; font-size: 12px; letter-spacing: 1px; font-family: monospace; }
+        h1 { margin: 0; font-size: 28px; color: #fff; text-shadow: 0 0 10px #00ffff; letter-spacing: 2px; }
+        p { margin: 5px 0 0; color: #00ffff; font-size: 12px; font-family: monospace; }
 
-        #hud-status {
-            position: absolute; top: 30px; right: 30px;
-            background: rgba(20,0,30,0.8); border: 1px solid #d000ff; color: #e0b0ff;
-            padding: 5px 15px; border-radius: 20px; font-size: 12px; letter-spacing: 1px;
-            box-shadow: 0 0 10px rgba(200,0,255,0.3);
-        }
-
-        #hud-flow {
+        #hud-footer {
             position: absolute; bottom: 30px; width: 100%; text-align: center;
             color: #88aaff; font-size: 14px; letter-spacing: 3px; font-family: monospace;
             text-shadow: 0 0 10px rgba(0,100,255,0.5);
         }
 
-        /* --- INFO PANEL --- */
+        /* --- 詳細パネル --- */
         #panel {
-            position: absolute; top: 0; right: 0; width: 360px; height: 100%;
-            background: rgba(5,8,12,0.95); border-left: 1px solid #333;
-            transform: translateX(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            position: absolute; top: 0; right: 0; width: 350px; height: 100%;
+            background: rgba(10, 15, 20, 0.95); border-left: 1px solid #333;
+            transform: translateX(100%); transition: transform 0.3s;
             color: #eee; display: flex; flex-direction: column; z-index: 20; pointer-events: auto;
-            box-shadow: -20px 0 50px rgba(0,0,0,0.9);
+            box-shadow: -20px 0 50px rgba(0,0,0,0.8);
         }
         #panel.active { transform: translateX(0); }
-        
         .p-head { padding: 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
-        .p-tag { font-size: 10px; background: #00ffff; color: #000; padding: 3px 8px; border-radius: 2px; font-weight: bold; }
-        .p-title { font-size: 24px; margin: 15px 0 0; color: #fff; text-shadow: 0 0 10px currentColor; }
-        
+        .p-tag { font-size: 10px; padding: 2px 8px; border-radius: 2px; background: #00ffff; color: #000; font-weight: bold; }
+        .p-title { font-size: 24px; margin: 15px 0 0; color: #fff; }
         .p-body { padding: 30px; overflow-y: auto; flex: 1; }
-        .row { margin-bottom: 25px; }
-        .label { font-size: 10px; color: #00ffff; border-bottom: 1px solid #333; display: block; margin-bottom: 5px; }
+        .row { margin-bottom: 20px; }
+        .label { font-size: 10px; color: #00ffff; display: block; margin-bottom: 5px; border-bottom: 1px solid #333; }
         .text { font-size: 13px; line-height: 1.6; color: #ccc; }
-        .thought { font-family: monospace; color: #fff; background: rgba(0,255,255,0.05); padding: 15px; border-left: 3px solid #00ffff; border-radius: 0 4px 4px 0; }
-
-        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; transition: 0.2s; }
-        .close-btn:hover { color: #fff; }
-
-        /* --- LOADER --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center; flex-direction: column;
-            transition: opacity 0.5s; cursor: pointer;
-        }
-        .load-title { font-size: 40px; color: #fff; font-weight: bold; letter-spacing: 10px; text-shadow: 0 0 20px #00ffff; margin: 0; }
-        .load-sub { color: #00ffff; font-family: monospace; margin-top: 15px; letter-spacing: 2px; animation: blink 1s infinite; font-size: 12px; }
-        @keyframes blink { 50% { opacity: 0.4; } }
+        .close { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #fff; }
     </style>
+
+    <script>
+        window.onerror = function(msg, url, line) {
+            const el = document.getElementById('error-console');
+            if(el) {
+                el.style.display = 'block';
+                el.innerHTML += "Error: " + msg + " (Line: " + line + ")\n";
+            }
+            return false;
+        };
+    </script>
 </head>
 <body>
 
-    <div id="loader" onclick="startSystem()">
-        <div class="load-title">SONALIA</div>
-        <div class="load-sub">SYSTEM READY [CLICK TO START]</div>
+    <div id="error-console"></div>
+
+    <div id="loader" onclick="startApp()">
+        <div class="logo">SONALIA</div>
+        <div class="loading-text">SYSTEM READY...</div>
+        <div class="tap-hint">TAP SCREEN TO START</div>
     </div>
 
     <div id="ui-layer">
@@ -78,275 +93,261 @@
             <h1>思考回路マップ</h1>
             <p>4層OS × 内面DB × 8係数</p>
         </div>
-        <div id="hud-status">Kamui Architecture</div>
-        <div id="hud-flow">
+        <div id="hud-footer">
             現在（入力・意味付け） ▶▶▶ 未来（選択・行動）
         </div>
     </div>
 
     <div id="panel">
-        <div class="close-btn" onclick="closePanel()">×</div>
+        <div class="close" onclick="closePanel()">×</div>
         <div class="p-head">
             <span class="p-tag" id="p-tag">TAG</span>
             <h2 class="p-title" id="p-title">Title</h2>
         </div>
         <div class="p-body">
             <div class="row"><span class="label">DEFINITION</span><div class="text" id="p-desc">...</div></div>
-            <div class="row"><span class="label">SYSTEM ROLE</span><div class="text" id="p-role">...</div></div>
-            <div class="row"><span class="label">INTERNAL VOICE</span><div class="thought" id="p-thought">...</div></div>
+            <div class="row"><span class="label">ROLE</span><div class="text" id="p-role">...</div></div>
+            <div class="row"><span class="label">THOUGHT</span><div class="text" id="p-thought" style="color:#fff; font-family:monospace;">...</div></div>
         </div>
     </div>
 
     <canvas id="canvas"></canvas>
 
     <script>
-        // --- DATA DEFINITION ---
-        const NODES = [
-            // Left (OS) - Cyan/Green
-            { id:"OS1", type:"OS(1層)", name:"生存OS", color:"#00FFFF", x:-180, y:-80, z:0, desc:"危険回避・安全確保。", role:"リスク管理", thought:"「危なくないか？」" },
-            { id:"OS2", type:"OS(1層)", name:"生活OS", color:"#00FF88", x:-180, y:80, z:0, desc:"ルーティン維持・変化適応。", role:"習慣維持", thought:"「いつものパターン？」" },
-            { id:"OS3", type:"OS(2層)", name:"評価OS", color:"#0088FF", x:-120, y:-40, z:-60, desc:"善悪・ルールの判定。", role:"善悪判断", thought:"「それは正しいか？」" },
-            { id:"OS4", type:"OS(2層)", name:"所属OS", color:"#FF8800", x:-120, y:40, z:-60, desc:"集団帰属・疎外感回避。", role:"集団帰属", thought:"「浮いてないか？」" },
-            { id:"OS5", type:"OS(3層)", name:"報酬OS", color:"#FFD700", x:-120, y:-40, z:60, desc:"損得・コスパ計算。", role:"損得勘定", thought:"「損しないか？」" },
-            { id:"OS6", type:"OS(3層)", name:"意味OS", color:"#AA00FF", x:-120, y:40, z:60, desc:"意義・自己実現。", role:"意義探求", thought:"「どんな意味がある？」" },
-            { id:"OS7", type:"OS(4層)", name:"時間OS", color:"#00FFFF", x:-60, y:-120, z:0, desc:"過去経験・未来予測。", role:"時間参照", thought:"「将来どうなる？」" },
-            { id:"OS8", type:"OS(4層)", name:"協調OS", color:"#FF00AA", x:-60, y:120, z:0, desc:"利害バランス調整。", role:"利害調整", thought:"「相手はどう思う？」" },
-            
-            // Left (DB) - Deep Center
-            { id:"DB1", type:"DB", name:"欲求DB", color:"#FF4400", x:-280, y:60, z:0, desc:"根源的渇望。", role:"Motivation", thought:"(Deep Desire)" },
-            { id:"DB2", type:"DB", name:"情動DB", color:"#0044FF", x:-280, y:-60, z:0, desc:"感情記憶。", role:"Emotion", thought:"(Flashback)" },
-            { id:"DB3", type:"DB", name:"価値観DB", color:"#FFCC00", x:-240, y:0, z:80, desc:"信念・ルール。", role:"Belief", thought:"(Core Rules)" },
-            { id:"DB4", type:"DB", name:"無意識DB", color:"#888888", x:-240, y:0, z:-80, desc:"反射的クセ。", role:"Auto-Pilot", thought:"(Reflex)" },
+        // --- 設定とデータ ---
+        const CONFIG = {
+            particleCount: 60,
+            connectionDist: 150,
+            speed: 0.5
+        };
 
-            // Right (Coef) - Purple/Pink
-            { id:"IQ", type:"係数", name:"IQ(論理)", color:"#00CCFF", x:100, y:-80, z:0, desc:"情報構造化・論理力。", role:"Logic Engine", thought:"分析・分解" },
-            { id:"EQ", type:"係数", name:"EQ(感情)", color:"#FF6666", x:100, y:80, z:0, desc:"感情察知・共感力。", role:"Empathy", thought:"共感・配慮" },
-            { id:"SQ", type:"係数", name:"SQ(社会)", color:"#FFCC00", x:160, y:-40, z:60, desc:"関係構築・適応力。", role:"Social Net", thought:"適応・交渉" },
-            { id:"AQ", type:"係数", name:"AQ(逆境)", color:"#888888", x:160, y:40, z:60, desc:"ストレス耐性。", role:"Resilience", thought:"耐久・忍耐" },
-            { id:"CQ", type:"係数", name:"CQ(創造)", color:"#AA00FF", x:160, y:-40, z:-60, desc:"好奇心・発想力。", role:"Innovator", thought:"発想・着眼" },
-            { id:"HQ", type:"係数", name:"HQ(人間)", color:"#FFFFFF", x:160, y:40, z:-60, desc:"誠実さ・公平性。", role:"Ethical", thought:"誠実・信頼" },
-            { id:"MQ", type:"係数", name:"MQ(行動)", color:"#FF3300", x:220, y:0, z:90, desc:"実行スピード。", role:"Activator", thought:"即断・実行" },
-            { id:"KQ", type:"係数", name:"KQ(知識)", color:"#00FF88", x:220, y:0, z:-90, desc:"知識活用力。", role:"Knowledge", thought:"応用・転用" },
+        const DATA = [
+            // Left (OS) - Cyan
+            { id:"OS1", type:"OS(1層)", name:"生存OS", color:"#00FFFF", x:0.2, y:0.3, desc:"危険回避・安全確保。", role:"リスク管理", thought:"「危なくないか？」" },
+            { id:"OS2", type:"OS(1層)", name:"生活OS", color:"#00FF88", x:0.2, y:0.7, desc:"ルーティン維持・変化適応。", role:"習慣維持", thought:"「いつものパターン？」" },
+            { id:"OS3", type:"OS(2層)", name:"評価OS", color:"#0088FF", x:0.3, y:0.4, desc:"善悪・ルールの判定。", role:"善悪判断", thought:"「それは正しいか？」" },
+            { id:"OS4", type:"OS(2層)", name:"所属OS", color:"#FF8800", x:0.3, y:0.6, desc:"集団帰属・疎外感回避。", role:"集団帰属", thought:"「浮いてないか？」" },
+            { id:"OS5", type:"OS(3層)", name:"報酬OS", color:"#FFD700", x:0.3, y:0.4, desc:"損得・コスパ計算。", role:"損得勘定", thought:"「損しないか？」" },
+            { id:"OS6", type:"OS(3層)", name:"意味OS", color:"#AA00FF", x:0.3, y:0.6, desc:"意義・自己実現。", role:"意義探求", thought:"「どんな意味がある？」" },
+            { id:"OS7", type:"OS(4層)", name:"時間OS", color:"#00FFFF", x:0.35, y:0.2, desc:"過去経験・未来予測。", role:"時間参照", thought:"「将来どうなる？」" },
+            { id:"OS8", type:"OS(4層)", name:"協調OS", color:"#FF00AA", x:0.35, y:0.8, desc:"利害バランス調整。", role:"利害調整", thought:"「相手はどう思う？」" },
+            // Left (DB)
+            { id:"DB1", type:"DB", name:"欲求DB", color:"#FF4400", x:0.1, y:0.5, desc:"根源的渇望。", role:"Motivation", thought:"(Deep Desire)" },
+            { id:"DB2", type:"DB", name:"情動DB", color:"#0044FF", x:0.15, y:0.5, desc:"感情記憶。", role:"Emotion", thought:"(Flashback)" },
             
-            // Center Core
-            { id:"CORE", type:"CORE", name:"現在", color:"#FFFFFF", x:0, y:0, z:0, desc:"思考の中心点。", role:"Self", thought:"..." }
+            // Right (Coef) - Purple
+            { id:"IQ", type:"係数", name:"IQ(論理)", color:"#00CCFF", x:0.7, y:0.3, desc:"情報構造化・論理力。", role:"Logic Engine", thought:"分析・分解" },
+            { id:"EQ", type:"係数", name:"EQ(感情)", color:"#FF6666", x:0.7, y:0.7, desc:"感情察知・共感力。", role:"Empathy", thought:"共感・配慮" },
+            { id:"SQ", type:"係数", name:"SQ(社会)", color:"#FFCC00", x:0.8, y:0.4, desc:"関係構築・適応力。", role:"Social Net", thought:"適応・交渉" },
+            { id:"AQ", type:"係数", name:"AQ(逆境)", color:"#888888", x:0.8, y:0.6, desc:"ストレス耐性。", role:"Resilience", thought:"耐久・忍耐" },
+            { id:"CQ", type:"係数", name:"CQ(創造)", color:"#AA00FF", x:0.8, y:0.4, desc:"好奇心・発想力。", role:"Innovator", thought:"発想・着眼" },
+            { id:"HQ", type:"係数", name:"HQ(人間)", color:"#FFFFFF", x:0.8, y:0.6, desc:"誠実さ・公平性。", role:"Ethical", thought:"誠実・信頼" },
+            { id:"MQ", type:"係数", name:"MQ(行動)", color:"#FF3300", x:0.9, y:0.5, desc:"実行スピード。", role:"Activator", thought:"即断・実行" },
+            { id:"KQ", type:"係数", name:"KQ(知識)", color:"#00FF88", x:0.9, y:0.5, desc:"知識活用力。", role:"Knowledge", thought:"応用・転用" }
         ];
 
-        // --- 1. ENGINE SETUP ---
-        const canvas = document.getElementById('canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let angleX = 0, angleY = 0; // Rotation angles
-        let mouseX = 0, mouseY = 0;
-        let isMouseDown = false;
+        // --- システム変数 ---
+        let canvas, ctx, width, height;
+        let nodes = [];
+        let particles = [];
+        let mouse = { x: 0, y: 0, down: false };
+        let activeNode = null;
 
-        // 3D Point Class
-        class Point {
-            constructor(d) {
-                this.x = d.x; this.y = d.y; this.z = d.z;
-                this.color = d.color;
-                this.data = d;
-                this.screenX = 0; this.screenY = 0; this.scale = 0;
+        // --- 初期化 ---
+        window.onload = function() {
+            try {
+                init();
+                animate();
+                // 3秒後に自動スタート（保険）
+                setTimeout(startApp, 3000);
+            } catch(e) {
+                console.error(e);
+                alert("起動エラー: " + e.message);
             }
-            project(cx, cy, fov) {
-                // Rotation
-                let x = this.x * Math.cos(angleY) - this.z * Math.sin(angleY);
-                let z = this.z * Math.cos(angleY) + this.x * Math.sin(angleY);
-                let y = this.y * Math.cos(angleX) - z * Math.sin(angleX);
-                z = z * Math.cos(angleX) + this.y * Math.sin(angleX);
+        };
+
+        function init() {
+            canvas = document.getElementById('canvas');
+            ctx = canvas.getContext('2d');
+            resize();
+            window.addEventListener('resize', resize);
+
+            // ノード生成
+            DATA.forEach(d => {
+                nodes.push({
+                    x: width * d.x,
+                    y: height * d.y,
+                    baseX: d.x,
+                    baseY: d.y,
+                    size: 8 + Math.random() * 5,
+                    color: d.color,
+                    data: d,
+                    phase: Math.random() * Math.PI * 2
+                });
+            });
+
+            // 中心コア
+            nodes.push({
+                x: width * 0.5, y: height * 0.5, baseX: 0.5, baseY: 0.5,
+                size: 20, color: "#00FFFF",
+                data: { name:"現在", type:"CORE", desc:"思考の中心点", role:"Self", thought:"..." },
+                phase: 0
+            });
+
+            // 粒子生成
+            for(let i=0; i<CONFIG.particleCount; i++) {
+                particles.push(createParticle());
+            }
+
+            // マウスイベント
+            window.addEventListener('mousemove', e => {
+                mouse.x = e.clientX;
+                mouse.y = e.clientY;
+            });
+            window.addEventListener('mousedown', e => {
+                // UIクリック無視
+                if(e.target.closest('#panel')) return;
                 
-                // Perspective
-                const scale = fov / (fov + z + 600);
-                this.screenX = x * scale + cx;
-                this.screenY = y * scale + cy;
-                this.scale = scale;
-                this.depth = z; // Store depth for sorting
-            }
-        }
-
-        const points = NODES.map(d => new Point(d));
-        const particles = []; // Flow particles
-
-        // Particle Init
-        for(let i=0; i<40; i++) {
-            particles.push({
-                x: -400 + Math.random()*200, y: (Math.random()-0.5)*200, z: (Math.random()-0.5)*200,
-                speed: 3 + Math.random()*3, size: Math.random()*2
+                checkClick();
             });
         }
 
-        // --- 2. MAIN LOOP ---
-        function loop() {
-            // Background
-            ctx.fillStyle = "#000005";
+        function createParticle() {
+            return {
+                x: Math.random() * width,
+                y: Math.random() * height,
+                vx: 1 + Math.random() * 2, // 左から右へ
+                vy: (Math.random() - 0.5) * 0.5,
+                size: 1 + Math.random() * 2,
+                life: Math.random()
+            };
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+            // ノード位置再計算
+            nodes.forEach(n => {
+                n.x = width * n.baseX;
+                n.y = height * n.baseY;
+            });
+        }
+
+        // --- 描画ループ ---
+        function animate() {
+            // 背景（黒）
+            ctx.fillStyle = "#000000";
             ctx.fillRect(0, 0, width, height);
-            
-            const cx = width / 2;
-            const cy = height / 2;
-            const fov = 600;
 
-            // Rotate
-            if(!isMouseDown) {
-                angleY += 0.002;
-            } else {
-                angleY += (mouseX - width/2) * 0.00005;
-                angleX += (mouseY - height/2) * 0.00005;
-            }
+            // 1. 線を描画 (Neural Network)
+            ctx.lineWidth = 0.5;
+            for(let i=0; i<nodes.length; i++) {
+                let n1 = nodes[i];
+                // ふわふわ動かす
+                n1.x = width * n1.baseX + Math.sin(Date.now()*0.001 + n1.phase)*10;
+                n1.y = height * n1.baseY + Math.cos(Date.now()*0.001 + n1.phase)*10;
 
-            // Project all points first
-            points.forEach(p => p.project(cx, cy, fov));
-            
-            // Draw Connections (Lines)
-            ctx.lineWidth = 1;
-            for(let i=0; i<points.length; i++) {
-                for(let j=i+1; j<points.length; j++) {
-                    const p1 = points[i];
-                    const p2 = points[j];
+                for(let j=i+1; j<nodes.length; j++) {
+                    let n2 = nodes[j];
+                    let dist = Math.hypot(n1.x - n2.x, n1.y - n2.y);
                     
-                    // Simple distance check in 3D space
-                    const dx = p1.x - p2.x;
-                    const dy = p1.y - p2.y;
-                    const dz = p1.z - p2.z;
-                    const dist = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
-                    // Connect logic: Close neighbors OR center connections
-                    if (dist < 130 || (p1.data.type === 'CORE' && p2.x !== 0)) {
-                        const alpha = Math.max(0, (1 - dist/200) * 0.4);
+                    // 近くにあるか、中心となら繋ぐ
+                    if (dist < CONFIG.connectionDist || (n1.data.type === 'CORE' && dist < 400)) {
+                        let alpha = 1 - (dist / (n1.data.type === 'CORE' ? 400 : CONFIG.connectionDist));
                         if(alpha > 0) {
-                            const grad = ctx.createLinearGradient(p1.screenX, p1.screenY, p2.screenX, p2.screenY);
-                            grad.addColorStop(0, hexToRgba(p1.color, alpha));
-                            grad.addColorStop(1, hexToRgba(p2.color, alpha));
-                            ctx.strokeStyle = grad;
+                            ctx.strokeStyle = `rgba(0, 255, 255, ${alpha * 0.4})`;
                             ctx.beginPath();
-                            ctx.moveTo(p1.screenX, p1.screenY);
-                            ctx.lineTo(p2.screenX, p2.screenY);
+                            ctx.moveTo(n1.x, n1.y);
+                            ctx.lineTo(n2.x, n2.y);
                             ctx.stroke();
                         }
                     }
                 }
             }
 
-            // Draw Particles (Flow Effect)
-            ctx.fillStyle = "#fff";
+            // 2. 粒子を描画 (Data Flow)
+            ctx.fillStyle = "#ffffff";
             particles.forEach(p => {
-                p.x += p.speed;
-                if(p.x > 400) p.x = -400; // Reset
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.002;
                 
-                // Manual projection for particle
-                let x = p.x * Math.cos(angleY) - p.z * Math.sin(angleY);
-                let z = p.z * Math.cos(angleY) + p.x * Math.sin(angleY);
-                let y = p.y * Math.cos(angleX) - z * Math.sin(angleX);
-                z = z * Math.cos(angleX) + p.y * Math.sin(angleX);
-                
-                const s = fov / (fov + z + 600);
-                const sx = x * s + cx;
-                const sy = y * s + cy;
-                
-                ctx.globalAlpha = 0.6;
+                // 画面外に出たらリセット
+                if(p.x > width || p.life <= 0) {
+                    p.x = 0;
+                    p.y = Math.random() * height;
+                    p.life = 1;
+                }
+
+                ctx.globalAlpha = p.life * 0.5;
                 ctx.beginPath();
-                ctx.arc(sx, sy, p.size * s, 0, Math.PI*2);
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
                 ctx.fill();
             });
             ctx.globalAlpha = 1.0;
 
-            // Draw Nodes (Sorted by depth for proper occlusion)
-            const sortedPoints = [...points].sort((a, b) => b.depth - a.depth);
-            
-            sortedPoints.forEach(p => {
-                const r = (p.data.type === 'CORE' ? 15 : 6) * p.scale;
-                
+            // 3. ノードを描画
+            nodes.forEach(n => {
                 // Glow
-                const glowR = r * 4;
-                const grad = ctx.createRadialGradient(p.screenX, p.screenY, 0, p.screenX, p.screenY, glowR);
-                grad.addColorStop(0, hexToRgba(p.color, 0.8));
-                grad.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = grad;
+                let glow = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, n.size * 3);
+                glow.addColorStop(0, n.color);
+                glow.addColorStop(1, "rgba(0,0,0,0)");
+                ctx.fillStyle = glow;
                 ctx.beginPath();
-                ctx.arc(p.screenX, p.screenY, glowR, 0, Math.PI*2);
+                ctx.arc(n.x, n.y, n.size * 3, 0, Math.PI*2);
                 ctx.fill();
 
-                // Solid Core
+                // Core
                 ctx.fillStyle = "#fff";
                 ctx.beginPath();
-                ctx.arc(p.screenX, p.screenY, r, 0, Math.PI*2);
+                ctx.arc(n.x, n.y, n.size * 0.6, 0, Math.PI*2);
                 ctx.fill();
 
                 // Text
-                if(p.data.type !== 'CORE') {
-                    ctx.fillStyle = "#fff";
-                    ctx.font = `${Math.max(8, 10 * p.scale)}px Arial`;
-                    ctx.textAlign = "center";
-                    ctx.fillText(p.data.name, p.screenX, p.screenY + r + 12);
-                }
+                ctx.font = "11px Arial";
+                ctx.textAlign = "center";
+                ctx.fillStyle = "#fff";
+                ctx.fillText(n.data.name, n.x, n.y + n.size + 15);
             });
 
-            requestAnimationFrame(loop);
+            requestAnimationFrame(animate);
         }
 
-        // --- 3. UTILS & EVENTS ---
-        function hexToRgba(hex, alpha) {
-            const r = parseInt(hex.slice(1, 3), 16);
-            const g = parseInt(hex.slice(3, 5), 16);
-            const b = parseInt(hex.slice(5, 7), 16);
-            return `rgba(${r},${g},${b},${alpha})`;
-        }
-
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        
-        window.addEventListener('mousemove', e => {
-            mouseX = e.clientX;
-            mouseY = e.clientY;
-        });
-        
-        window.addEventListener('mousedown', e => {
-            isMouseDown = true;
-            // Click Detection
-            const sorted = [...points].sort((a, b) => a.depth - b.depth); // Front first
-            for(let p of sorted) {
-                const dx = e.clientX - p.screenX;
-                const dy = e.clientY - p.screenY;
-                if(Math.sqrt(dx*dx + dy*dy) < 30 * p.scale) {
-                    showPanel(p.data);
-                    isMouseDown = false; // Stop rotation drag if clicked
-                    break;
+        // --- インタラクション ---
+        function checkClick() {
+            let hit = false;
+            nodes.forEach(n => {
+                let dist = Math.hypot(mouse.x - n.x, mouse.y - n.y);
+                if(dist < 30) {
+                    openPanel(n.data, n.color);
+                    hit = true;
                 }
-            }
-        });
-        window.addEventListener('mouseup', () => isMouseDown = false);
+            });
+            if(!hit) closePanel();
+        }
 
-        // --- UI LOGIC ---
-        function showPanel(d) {
+        function openPanel(d, color) {
             document.getElementById('p-tag').innerText = d.type;
-            document.getElementById('p-tag').style.background = d.color;
+            document.getElementById('p-tag').style.background = color;
             document.getElementById('p-title').innerText = d.name;
-            document.getElementById('p-title').style.color = d.color;
+            document.getElementById('p-title').style.color = color;
             document.getElementById('p-desc').innerText = d.desc;
             document.getElementById('p-role').innerText = d.role;
             document.getElementById('p-thought').innerText = d.thought;
             document.getElementById('panel').classList.add('active');
         }
+
         function closePanel() {
             document.getElementById('panel').classList.remove('active');
         }
         window.closePanel = closePanel;
 
-        function startSystem() {
+        function startApp() {
             const l = document.getElementById('loader');
             l.style.opacity = 0;
-            setTimeout(() => { l.style.display = 'none'; }, 500);
+            setTimeout(() => { l.style.display = 'none'; }, 800);
         }
-        window.startSystem = startSystem;
-
-        // --- INIT ---
-        resize();
-        loop();
-        
-        // Auto start if no click after 2s
-        setTimeout(startSystem, 2000);
+        window.startApp = startApp;
 
     </script>
 </body>
