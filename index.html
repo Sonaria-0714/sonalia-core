@@ -2,236 +2,367 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONALIA: INPUT VISUALIZER</title>
+    <title>SONALIA: NEURAL ARCHITECTURE</title>
     <style>
-        body { margin: 0; overflow: hidden; background-color: #050505; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; user-select: none; }
         canvas { display: block; }
 
-        /* UIオーバーレイ */
-        #ui {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none;
-        }
-        #title {
-            position: absolute; top: 30px; left: 30px;
-            color: #fff; font-size: 24px; font-weight: bold; letter-spacing: 4px;
-            text-shadow: 0 0 10px #00ffff; border-left: 4px solid #00ffff; padding-left: 15px;
-        }
-        #subtitle {
-            font-size: 12px; color: #00ffff; margin-top: 5px; font-family: monospace;
-        }
+        /* --- UI LAYER --- */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
         
-        .label {
-            position: absolute; color: #88aaff; font-size: 12px; font-family: monospace;
-            text-shadow: 0 0 5px #000; transform: translate(-50%, -50%);
+        #hud-title {
+            position: absolute; top: 40px; left: 40px;
+            border-left: 4px solid #00ffff; padding-left: 20px;
+            background: linear-gradient(90deg, rgba(0,20,30,0.8), transparent);
         }
+        h1 { margin: 0; font-size: 32px; color: #fff; text-shadow: 0 0 20px #00ffff; letter-spacing: 4px; }
+        p { margin: 5px 0 0; color: #00ffff; font-size: 14px; letter-spacing: 2px; font-family: monospace; }
+
+        /* フローガイド（下部） */
+        #hud-flow {
+            position: absolute; bottom: 40px; width: 100%; text-align: center;
+        }
+        .flow-bar {
+            display: inline-block; padding: 10px 30px;
+            background: rgba(0,10,20,0.8); border: 1px solid rgba(0,255,255,0.3); border-radius: 30px;
+            color: #88aaff; font-size: 14px; letter-spacing: 3px; font-family: monospace;
+            text-shadow: 0 0 10px rgba(0,100,255,0.5);
+        }
+        .arrow { color: #00ffff; animation: slideRight 1.5s infinite; display: inline-block; margin: 0 10px; }
+        @keyframes slideRight { 0%{opacity:0; transform:translateX(-5px);} 50%{opacity:1;} 100%{opacity:0; transform:translateX(5px);} }
+
+        /* 詳細パネル */
+        #panel {
+            position: absolute; top: 0; right: 0; width: 380px; height: 100%;
+            background: rgba(8, 12, 16, 0.95); border-left: 1px solid #333;
+            transform: translateX(100%); transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+            color: #eee; display: flex; flex-direction: column; z-index: 20; pointer-events: auto;
+            backdrop-filter: blur(10px);
+        }
+        #panel.active { transform: translateX(0); }
+        .p-head { padding: 40px 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
+        .p-tag { font-size: 10px; padding: 3px 8px; border-radius: 2px; background: #00ffff; color: #000; font-weight: bold; }
+        .p-title { font-size: 28px; margin: 15px 0 0; color: #fff; text-shadow: 0 0 10px currentColor; }
+        .p-body { padding: 30px; overflow-y: auto; flex: 1; }
+        .row { margin-bottom: 30px; }
+        .label { font-size: 11px; color: #00ffff; border-bottom: 1px solid rgba(255,255,255,0.2); display: block; margin-bottom: 8px; letter-spacing: 1px; }
+        .text { font-size: 14px; line-height: 1.7; color: #ccc; }
+        .thought { font-family: monospace; color: #fff; background: rgba(0,255,255,0.05); padding: 15px; border-left: 3px solid #00ffff; }
+        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #777; }
+        .close-btn:hover { color: #fff; }
+
+        /* ローダー */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 1s; cursor: pointer;
+        }
+        .load-text { font-size: 40px; color: #fff; font-weight: bold; letter-spacing: 5px; text-shadow: 0 0 20px #00ffff; }
+        .load-sub { color: #00ffff; font-family: monospace; margin-top: 10px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r120/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.120.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
 
-    <div id="ui">
-        <div id="title">
-            INPUT PROCESS
-            <div id="subtitle">五感入力データの流れ</div>
+    <div id="loader" onclick="startApp()">
+        <div class="load-text">SONALIA</div>
+        <div class="load-sub">LOADING NEURAL SYSTEM...</div>
+    </div>
+
+    <div id="ui-layer">
+        <div id="hud-title">
+            <h1>人体構造モデル</h1>
+            <p>4D NEURAL ARCHITECTURE</p>
+        </div>
+        <div id="hud-flow">
+            <div class="flow-bar">
+                HEAD (入力) <span class="arrow">▶▶▶</span> BODY (処理) <span class="arrow">▶▶▶</span> FEET (出力)
+            </div>
         </div>
     </div>
 
-    <canvas id="c"></canvas>
+    <div id="panel">
+        <div class="close-btn" onclick="closePanel()">×</div>
+        <div class="p-head">
+            <span class="p-tag" id="p-tag">TAG</span>
+            <h2 class="p-title" id="p-title">Title</h2>
+        </div>
+        <div class="p-body">
+            <div class="row"><span class="label">DEFINITION</span><div class="text" id="p-desc">...</div></div>
+            <div class="row"><span class="label">SYSTEM ROLE</span><div class="text" id="p-role">...</div></div>
+            <div class="row"><span class="label">INTERNAL VOICE</span><div class="thought" id="p-thought">...</div></div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
 
     <script>
-        /**
-         * 完全自立型・軽量2D描画エンジン
-         * 外部ライブラリを一切使わないため、読み込みエラーは発生しません。
-         */
-        const canvas = document.getElementById('c');
-        const ctx = canvas.getContext('2d');
-        
-        let width, height;
-        let particles = [];
-        let mouse = { x: 0, y: 0 };
-        
-        // 五感の定義
-        const SENSES = [
-            { id: "VISUAL", label: "視覚 (Vision)", color: "#00ffff", x: 0.15, y: 0.2 },
-            { id: "AUDIO",  label: "聴覚 (Auditory)", color: "#00ddff", x: 0.15, y: 0.35 },
-            { id: "TACTILE",label: "触覚 (Tactile)",  color: "#00bbff", x: 0.15, y: 0.5 },
-            { id: "SMELL",  label: "嗅覚 (Olfactory)",color: "#0099ff", x: 0.15, y: 0.65 },
-            { id: "TASTE",  label: "味覚 (Gustatory)",color: "#0077ff", x: 0.15, y: 0.8 }
+        // --- DATA DEFINITION (Z-Axis Layout: Horizontal Sleeper) ---
+        // Z軸: -150(頭) -> +150(足) の方向へ情報が流れる
+        const DATA = [
+            // --- 1. HEAD (Input) ---
+            { id:"SENSE", type:"INPUT", name:"五感入力", color:0xFFFFFF, z:-140, desc:"視覚・聴覚などの外界情報。", role:"情報収集", thought:"(Sensing...)" },
+            
+            // --- 2. CHEST (OS Layers) ---
+            { id:"OS4", type:"OS(4層)", name:"時間/協調", color:0xFFD700, z:-80, desc:"過去未来・自他バランス。", role:"大局観", thought:"「将来は？相手は？」" },
+            { id:"OS3", type:"OS(3層)", name:"報酬/意味", color:0xAA00FF, z:-60, desc:"損得・意義の判断。", role:"価値判断", thought:"「得か？意味あるか？」" },
+            { id:"OS2", type:"OS(2層)", name:"評価/所属", color:0x3388FF, z:-40, desc:"善悪・集団帰属。", role:"社会性", thought:"「正しいか？浮いてないか？」" },
+            { id:"OS1", type:"OS(1層)", name:"生存/生活", color:0x00FFFF, z:-20, desc:"安全・ルーティン。", role:"生存本能", thought:"「危なくないか？いつも通りか？」" },
+
+            // --- 3. STOMACH (DB Core) ---
+            { id:"DB_DESIRE", type:"DB", name:"欲求DB", color:0xFF5500, z:10, x:-20, y:20, desc:"根源的渇望。", role:"Motivation", thought:"(Deep Desire)" },
+            { id:"DB_EMOTION", type:"DB", name:"情動DB", color:0x0044FF, z:10, x:20, y:20, desc:"感情記憶。", role:"Emotion", thought:"(Flashback)" },
+            { id:"DB_VALUE", type:"DB", name:"価値観DB", color:0xFFCC00, z:10, x:20, y:-20, desc:"信念・ルール。", role:"Belief", thought:"(Core Rule)" },
+            { id:"DB_IMPLICIT", type:"DB", name:"無意識DB", color:0x888888, z:10, x:-20, y:-20, desc:"反射的クセ。", role:"Reflex", thought:"(Auto-Pilot)" },
+
+            // --- 4. HIPS (Factors Engine) ---
+            { id:"IQ", type:"係数", name:"IQ", color:0x00CCFF, z:50, angle:0, desc:"論理力。", role:"Logic", thought:"分析" },
+            { id:"EQ", type:"係数", name:"EQ", color:0xFF6666, z:50, angle:1, desc:"感情力。", role:"Empathy", thought:"共感" },
+            { id:"SQ", type:"係数", name:"SQ", color:0xFFCC00, z:50, angle:2, desc:"社会性。", role:"Social", thought:"適応" },
+            { id:"AQ", type:"係数", name:"AQ", color:0x888888, z:50, angle:3, desc:"逆境力。", role:"Resilience", thought:"忍耐" },
+            { id:"CQ", type:"係数", name:"CQ", color:0xAA00FF, z:50, angle:4, desc:"創造力。", role:"Idea", thought:"発想" },
+            { id:"HQ", type:"係数", name:"HQ", color:0xFFFFFF, z:50, angle:5, desc:"人間力。", role:"Ethics", thought:"誠実" },
+            { id:"MQ", type:"係数", name:"MQ", color:0xFF3300, z:50, angle:6, desc:"行動力。", role:"Action", thought:"実行" },
+            { id:"KQ", type:"係数", name:"KQ", color:0x00FF88, z:50, angle:7, desc:"知識力。", role:"Know-How", thought:"応用" },
+
+            // --- 5. FEET (Output) ---
+            { id:"OUT", type:"OUTPUT", name:"行動出力", color:0xFFFFFF, z:120, desc:"最終的な言動・表情。", role:"Expression", thought:"(Act)" }
         ];
 
-        // 初期化
+        // --- MAIN SYSTEM ---
+        let scene, camera, renderer, controls;
+        let humanGroup, glowTex;
+        const interactables = [];
+        const clock = new THREE.Clock();
+
         function init() {
-            resize();
-            window.addEventListener('resize', resize);
-            window.addEventListener('mousemove', e => {
-                mouse.x = e.clientX;
-                mouse.y = e.clientY;
-            });
-            loop();
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x000000, 0.001);
+
+            // Camera Setup (Side View for Sleeper)
+            camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 1, 3000);
+            camera.position.set(250, 100, 0); 
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, canvas: document.getElementById('canvas') });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.autoRotate = true;
+            controls.autoRotateSpeed = 0.5;
+
+            humanGroup = new THREE.Group();
+            scene.add(humanGroup);
+
+            glowTex = createGlowTex();
+
+            // Build Components
+            buildHumanSilhouette();
+            buildSystem();
+            buildFlow();
+
+            animate();
+            
+            // Hide Loader
+            setTimeout(startApp, 1500);
         }
 
-        function resize() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+        // Texture
+        function createGlowTex() {
+            const c = document.createElement('canvas'); c.width=64; c.height=64;
+            const ctx = c.getContext('2d');
+            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
+            g.addColorStop(0, 'rgba(255,255,255,1)');
+            g.addColorStop(0.2, 'rgba(255,255,255,0.2)');
+            g.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
+            return new THREE.CanvasTexture(c);
         }
 
-        // パーティクル生成クラス
-        class Particle {
-            constructor(sense) {
-                this.sense = sense;
-                this.reset();
-                // ランダムな位置からスタートして自然なバラつきを出す
-                this.progress = Math.random(); 
-            }
+        // Builders
+        function buildHumanSilhouette() {
+            const pGeo = new THREE.Geometry();
+            for(let i=0; i<1500; i++) {
+                // Z-Axis Length (-160:Head to +160:Feet)
+                const z = (Math.random() * 320) - 160; 
+                let radius = 0;
+                
+                // Horizontal Shape
+                if (z < -130) radius = 25; // Head
+                else if (z < -110) radius = 15; // Neck
+                else if (z < -30) radius = 55; // Chest
+                else if (z < 40) radius = 45; // Waist
+                else radius = 50; // Legs
 
-            reset() {
-                // 五感の位置（左側）
-                this.sx = width * this.sense.x;
-                this.sy = height * this.sense.y;
+                const angle = Math.random() * Math.PI * 2;
+                const r = Math.random() * radius;
                 
-                // 脳の位置（右側中央）
-                this.tx = width * 0.7; // Target X
-                this.ty = height * 0.5; // Target Y
-                
-                this.x = this.sx;
-                this.y = this.sy;
-                this.size = Math.random() * 2 + 1;
-                this.speed = 0.005 + Math.random() * 0.01;
-                this.progress = 0;
-                this.wobble = Math.random() * Math.PI * 2;
+                // Y and X are thickness, Z is length
+                pGeo.vertices.push(new THREE.Vector3(
+                    Math.cos(angle)*r, 
+                    Math.sin(angle)*r,
+                    z
+                ));
             }
+            const pMat = new THREE.PointsMaterial({ color: 0x004466, size: 2, transparent: true, opacity: 0.3, blending: THREE.AdditiveBlending });
+            humanGroup.add(new THREE.Points(pGeo, pMat));
+        }
 
-            update() {
-                this.progress += this.speed;
+        function buildSystem() {
+            DATA.forEach(d => {
+                let mesh;
                 
-                if (this.progress >= 1) {
-                    this.reset();
+                if (d.type.includes("OS")) {
+                    // Rings around body
+                    const geo = new THREE.TorusGeometry(35, 0.5, 16, 64);
+                    const mat = new THREE.MeshBasicMaterial({ color: d.color, transparent: true, opacity: 0.6 });
+                    mesh = new THREE.Mesh(geo, mat);
+                    mesh.position.z = d.z;
+                    // Inner plane
+                    const plane = new THREE.Mesh(new THREE.CircleGeometry(30, 32), new THREE.MeshBasicMaterial({ color: d.color, transparent: true, opacity: 0.05, side: THREE.DoubleSide }));
+                    mesh.add(plane);
+
+                } else if (d.type === "DB") {
+                    // Core Spheres
+                    mesh = new THREE.Mesh(new THREE.SphereGeometry(6, 16, 16), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+                    mesh.position.set(d.x || 0, d.y || 0, d.z);
+
+                } else if (d.type === "係数") {
+                    // Engine ring around waist
+                    const r = 55;
+                    const angle = (d.angle / 8) * Math.PI * 2;
+                    mesh = new THREE.Mesh(new THREE.BoxGeometry(8,8,8), new THREE.MeshBasicMaterial({ color: d.color, wireframe: true }));
+                    mesh.position.set(Math.cos(angle)*r, Math.sin(angle)*r, d.z);
+                
+                } else if (d.id === "SENSE") {
+                    // Input point
+                    mesh = new THREE.Mesh(new THREE.SphereGeometry(2), new THREE.MeshBasicMaterial({color:0xffffff}));
+                    mesh.position.z = d.z;
+                } else if (d.id === "OUT") {
+                    return;
                 }
 
-                // イージング（加速しながら吸い込まれる動き）
-                const ease = this.progress * this.progress; // 2乗カーブ
+                if(mesh) {
+                    mesh.userData = { data: d, color: d.color };
+                    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, color: d.color, blending: THREE.AdditiveBlending }));
+                    spr.scale.set(40,40,1);
+                    mesh.add(spr);
+                    
+                    humanGroup.add(mesh);
+                    interactables.push(mesh);
+                }
+            });
 
-                // 直線補間 + 揺らぎ
-                this.x = this.sx + (this.tx - this.sx) * ease;
-                this.y = this.sy + (this.ty - this.sy) * ease + Math.sin(this.progress * 10 + this.wobble) * (20 * (1-ease));
-                
-                // マウスインタラクション（視線移動）
-                const mx = (mouse.x - width/2) * 0.05;
-                const my = (mouse.y - height/2) * 0.05;
-                this.x += mx * (1-ease);
-                this.y += my * (1-ease);
+            // Central Nerve
+            const lineGeo = new THREE.Geometry();
+            lineGeo.vertices.push(new THREE.Vector3(0, 0, -150));
+            lineGeo.vertices.push(new THREE.Vector3(0, 0, 150));
+            const lineMat = new THREE.LineBasicMaterial({ color: 0x00ffff, transparent: true, opacity: 0.3 });
+            humanGroup.add(new THREE.Line(lineGeo, lineMat));
+        }
+
+        const flowParticles = [];
+        function buildFlow() {
+            const pGeo = new THREE.Geometry();
+            for(let i=0; i<150; i++) {
+                const v = new THREE.Vector3(0,0,0);
+                pGeo.vertices.push(v);
+                flowParticles.push({
+                    vec: v,
+                    z: -160 + Math.random() * 50,
+                    x: (Math.random()-0.5) * 40,
+                    y: (Math.random()-0.5) * 40,
+                    speed: 2 + Math.random() * 3
+                });
             }
+            const pMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, map: glowTex, transparent: true, blending: THREE.AdditiveBlending, depthWrite:false });
+            const sys = new THREE.Points(pGeo, pMat);
+            humanGroup.add(sys);
+        }
 
-            draw() {
-                // 軌跡を描く（スピード感を出す）
-                const tailLength = 20 * this.progress;
-                
-                // グラデーション作成
-                const grad = ctx.createLinearGradient(
-                    this.x, this.y, 
-                    this.x - tailLength, this.y
+        // --- ANIMATION ---
+        function animate() {
+            requestAnimationFrame(animate);
+            TWEEN.update();
+            controls.update();
+            const time = clock.getElapsedTime();
+
+            // Pulse
+            const scale = 1 + Math.sin(time)*0.01;
+            humanGroup.scale.set(scale, scale, 1); 
+
+            // Flow
+            flowParticles.forEach(p => {
+                p.z += p.speed;
+                const r = 15;
+                p.vec.set(
+                    Math.cos(time*2 + p.z*0.05)*r + p.x*0.5,
+                    Math.sin(time*2 + p.z*0.05)*r + p.y*0.5,
+                    p.z
                 );
-                grad.addColorStop(0, this.sense.color);
-                grad.addColorStop(1, "rgba(0,0,0,0)");
+                if(p.z > 160) p.z = -160;
+            });
+            humanGroup.children[humanGroup.children.length-1].geometry.verticesNeedUpdate = true;
 
-                ctx.beginPath();
-                ctx.strokeStyle = grad;
-                ctx.lineWidth = this.size;
-                ctx.moveTo(this.x, this.y);
-                ctx.lineTo(this.x - tailLength, this.y); // 左側に尾を引く
-                ctx.stroke();
-                
-                // 先頭の光
-                ctx.beginPath();
-                ctx.fillStyle = "#fff";
-                ctx.arc(this.x, this.y, this.size/2, 0, Math.PI*2);
-                ctx.fill();
+            // Highlight Guide based on phase
+            const phase = (time % 5) / 5;
+            // Guide update logic here if needed
+
+            renderer.render(scene, camera);
+        }
+
+        // --- INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.target.closest('#panel') || e.target.closest('#loader')) return;
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(interactables);
+            if(hits.length > 0) {
+                const target = hits[0].object;
+                showPanel(target.userData.data, target.userData.color);
+            } else {
+                closePanel();
             }
+        });
+
+        function showPanel(d, col) {
+            document.getElementById('p-tag').innerText = d.type;
+            document.getElementById('p-title').innerText = d.name;
+            document.getElementById('p-title').style.color = '#'+new THREE.Color(col).getHexString();
+            document.getElementById('p-desc').innerText = d.desc;
+            document.getElementById('p-role').innerText = d.role;
+            document.getElementById('p-thought').innerText = d.thought;
+            document.getElementById('panel').classList.add('active');
         }
-
-        // パーティクル管理
-        for(let i=0; i<150; i++) {
-            // ランダムな感覚から発生させる
-            const s = SENSES[Math.floor(Math.random() * SENSES.length)];
-            particles.push(new Particle(s));
+        function closePanel() {
+            document.getElementById('panel').classList.remove('active');
         }
+        window.closePanel = closePanel;
 
-        // メインループ
-        function loop() {
-            // 画面クリア（少し残像を残す）
-            ctx.fillStyle = "rgba(5, 5, 10, 0.2)";
-            ctx.fillRect(0, 0, width, height);
-
-            // 1. 五感ノードの描画（左側の発信源）
-            SENSES.forEach(s => {
-                const x = width * s.x + (mouse.x - width/2)*0.02;
-                const y = height * s.y + (mouse.y - height/2)*0.02;
-                
-                // 光彩
-                const glow = ctx.createRadialGradient(x, y, 0, x, y, 40);
-                glow.addColorStop(0, s.color);
-                glow.addColorStop(1, "rgba(0,0,0,0)");
-                ctx.fillStyle = glow;
-                ctx.beginPath(); ctx.arc(x, y, 40, 0, Math.PI*2); ctx.fill();
-
-                // 核
-                ctx.fillStyle = "#fff";
-                ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI*2); ctx.fill();
-
-                // ラベル
-                ctx.fillStyle = "#fff";
-                ctx.font = "12px Consolas";
-                ctx.textAlign = "right";
-                ctx.fillText(s.label, x - 20, y + 4);
-            });
-
-            // 2. 脳/OSノードの描画（右側の受信源）
-            const cx = width * 0.7 + (mouse.x - width/2)*0.02;
-            const cy = height * 0.5 + (mouse.y - height/2)*0.02;
-            
-            // 脳のグロー
-            const coreGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 100);
-            coreGlow.addColorStop(0, "rgba(0, 255, 255, 0.4)");
-            coreGlow.addColorStop(1, "rgba(0,0,0,0)");
-            ctx.fillStyle = coreGlow;
-            ctx.beginPath(); ctx.arc(cx, cy, 100, 0, Math.PI*2); ctx.fill();
-            
-            // 脳のラベル
-            ctx.fillStyle = "#00ffff";
-            ctx.font = "bold 16px Consolas";
-            ctx.textAlign = "center";
-            ctx.fillText("OS / PROCESSING", cx, cy + 60);
-
-            // 3. パーティクルの更新と描画
-            ctx.globalCompositeOperation = 'lighter'; // 加算合成（光らせる）
-            particles.forEach(p => {
-                p.update();
-                p.draw();
-            });
-            ctx.globalCompositeOperation = 'source-over'; // 元に戻す
-
-            // 4. 接続ライン（うっすら）
-            ctx.lineWidth = 0.5;
-            SENSES.forEach(s => {
-                const sx = width * s.x + (mouse.x - width/2)*0.02;
-                const sy = height * s.y + (mouse.y - height/2)*0.02;
-                
-                const grad = ctx.createLinearGradient(sx, sy, cx, cy);
-                grad.addColorStop(0, s.color);
-                grad.addColorStop(1, "rgba(0,255,255,0.1)");
-                
-                ctx.strokeStyle = grad;
-                ctx.beginPath();
-                ctx.moveTo(sx, sy);
-                ctx.lineTo(cx, cy);
-                ctx.stroke();
-            });
-
-            requestAnimationFrame(loop);
+        function startApp() {
+            const l = document.getElementById('loader');
+            l.style.opacity = 0;
+            setTimeout(() => { l.style.display = 'none'; }, 800);
         }
+        window.startApp = startApp;
 
-        // スタート
-        init();
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth/window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        window.onload = init;
 
     </script>
 </body>
