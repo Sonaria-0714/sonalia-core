@@ -5,99 +5,58 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SONALIA 4D VIEW</title>
     <style>
-        /* --- 1. BASE DESIGN (Cyberpunk Style) --- */
-        body { margin: 0; overflow: hidden; background-color: #000005; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
         canvas { display: block; }
 
-        /* --- 2. UI OVERLAY --- */
+        /* --- UI LAYER --- */
         #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
 
-        /* 左上のタイトルボックス */
-        #hud-header {
+        #hud-title {
             position: absolute; top: 30px; left: 30px;
-            border-left: 4px solid #00ffff; padding-left: 20px;
-            background: linear-gradient(90deg, rgba(0,20,30,0.8), transparent);
+            border-left: 5px solid #00ffff; padding-left: 20px;
+            background: linear-gradient(90deg, rgba(0,20,40,0.8), transparent);
         }
-        .hud-title {
-            font-size: 32px; font-weight: 800; color: #fff; margin: 0;
-            text-shadow: 0 0 15px rgba(0,255,255,0.8); letter-spacing: 2px;
-        }
-        .hud-sub {
-            font-size: 14px; color: #00ffff; margin-top: 5px; letter-spacing: 1px; font-family: monospace;
-        }
+        h1 { margin: 0; font-size: 32px; color: #fff; text-shadow: 0 0 15px #00ffff; letter-spacing: 2px; }
+        p { margin: 5px 0 0; color: #00ffff; font-size: 14px; letter-spacing: 1px; }
 
-        /* 右上のステータス */
         #hud-status {
-            position: absolute; top: 30px; right: 30px; text-align: right;
-        }
-        .status-badge {
-            background: rgba(20, 0, 30, 0.8); border: 1px solid #aa00ff;
-            color: #dcb3ff; padding: 8px 15px; border-radius: 20px; font-size: 12px;
-            box-shadow: 0 0 10px rgba(170, 0, 255, 0.4); letter-spacing: 1px;
+            position: absolute; top: 30px; right: 30px;
+            background: rgba(20,0,30,0.8); border: 1px solid #aa00ff;
+            color: #e0b0ff; padding: 5px 15px; border-radius: 20px; font-size: 12px;
         }
 
-        /* 下部のフロー表示 */
-        #hud-flow {
-            position: absolute; bottom: 40px; width: 100%; text-align: center;
+        #hud-footer {
+            position: absolute; bottom: 30px; width: 100%; text-align: center;
+            color: #88aaff; font-size: 16px; letter-spacing: 4px; text-shadow: 0 0 10px rgba(0,100,255,0.5);
         }
-        .flow-text {
-            font-size: 16px; color: #88aaff; letter-spacing: 4px; font-weight: 300;
-            text-shadow: 0 0 10px rgba(136, 170, 255, 0.5);
-            display: flex; align-items: center; justify-content: center; gap: 20px;
-        }
-        .flow-arrow { animation: slideRight 1.5s infinite; color: #fff; }
-        @keyframes slideRight { 0%{opacity:0; transform:translateX(-10px);} 50%{opacity:1;} 100%{opacity:0; transform:translateX(10px);} }
 
-        /* --- 3. INFO PANEL (Right Side) --- */
+        /* --- PANEL --- */
         #panel {
-            position: absolute; top: 0; right: 0; width: 380px; height: 100%;
-            background: rgba(5, 7, 10, 0.95); border-left: 1px solid rgba(255,255,255,0.15);
-            transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-            color: #eee; display: flex; flex-direction: column; z-index: 100; pointer-events: auto;
-            box-shadow: -20px 0 50px rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            position: absolute; top: 0; right: 0; width: 350px; height: 100%;
+            background: rgba(5,8,12,0.95); border-left: 1px solid #333;
+            transform: translateX(100%); transition: 0.3s;
+            color: #eee; display: flex; flex-direction: column; z-index: 20; pointer-events: auto;
         }
         #panel.active { transform: translateX(0); }
-        
-        .p-header { 
-            padding: 40px 30px; border-bottom: 1px solid rgba(255,255,255,0.1); 
-            background: linear-gradient(180deg, rgba(255,255,255,0.05), transparent);
-        }
-        .p-tag {
-            font-size: 10px; font-weight: bold; color: #000; background: #00ffff;
-            padding: 3px 8px; border-radius: 2px; letter-spacing: 1px;
-        }
-        .p-title {
-            font-size: 28px; margin: 15px 0 0; color: #fff; font-weight: 300;
-            text-shadow: 0 0 20px currentColor; letter-spacing: 1px;
-        }
+        .p-head { padding: 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
+        .p-tag { background: #00ffff; color: #000; padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 2px; }
+        .p-title { font-size: 24px; color: #fff; margin: 10px 0 0; text-shadow: 0 0 10px currentColor; }
         .p-body { padding: 30px; overflow-y: auto; flex: 1; }
-        
-        .data-section { margin-bottom: 30px; }
-        .data-label {
-            font-size: 11px; color: #00ffff; border-bottom: 1px solid rgba(255,255,255,0.2);
-            margin-bottom: 8px; display: block; padding-bottom: 2px; letter-spacing: 1px;
-        }
-        .data-text { font-size: 14px; line-height: 1.7; color: #ccc; }
-        .data-thought {
-            font-family: monospace; font-size: 13px; color: #fff; 
-            background: rgba(0, 255, 255, 0.05); padding: 15px; 
-            border-left: 3px solid #00ffff; border-radius: 0 5px 5px 0;
-        }
+        .row { margin-bottom: 25px; }
+        .label { font-size: 10px; color: #00ffff; border-bottom: 1px solid #333; display: block; margin-bottom: 5px; }
+        .text { font-size: 13px; line-height: 1.6; color: #ccc; }
+        .thought { font-family: monospace; color: #fff; background: rgba(0,255,255,0.05); padding: 10px; border-left: 3px solid #00ffff; }
+        .close { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 24px; color: #666; }
 
-        .close-btn {
-            position: absolute; top: 20px; right: 20px; font-size: 24px; color: #666; cursor: pointer; transition: 0.2s;
-        }
-        .close-btn:hover { color: #fff; }
-
-        /* --- 4. LOADER --- */
+        /* --- LOADER --- */
         #loader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
-            display: flex; align-items: center; justify-content: center; flex-direction: column;
-            transition: opacity 0.8s; cursor: pointer;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.5s; cursor: pointer;
         }
-        .loader-title { font-size: 40px; color: #fff; font-weight: bold; letter-spacing: 10px; text-shadow: 0 0 20px #00ffff; }
-        .loader-sub { color: #00ffff; font-family: monospace; margin-top: 10px; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
+        .load-text { color: #00ffff; font-size: 20px; letter-spacing: 5px; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
+        #error-msg { color: red; font-family: monospace; margin-top: 20px; font-size: 12px; display: none; background: #200; padding: 10px; }
 
     </style>
 
@@ -107,99 +66,85 @@
 </head>
 <body>
 
-    <div id="loader" onclick="hideLoader()">
-        <div class="loader-title">SONALIA</div>
-        <div class="loader-sub">SYSTEM INITIALIZING... [CLICK TO START]</div>
+    <div id="loader" onclick="startApp()">
+        <div class="load-text">SONALIA SYSTEM LOADING...</div>
+        <div id="error-msg"></div>
     </div>
 
     <div id="ui-layer">
-        <div id="hud-header">
-            <h1 class="hud-title">思考回路マップ</h1>
-            <div class="hud-sub">4層OS × 内面DB × 8係数</div>
+        <div id="hud-title">
+            <h1>思考回路マップ</h1>
+            <p>4層OS × 内面DB × 8係数</p>
         </div>
-        <div id="hud-status">
-            <span class="status-badge">Sonaria 4D View v1.0</span>
-        </div>
-        <div id="hud-flow">
-            <div class="flow-text">
-                現在（入力・意味付け） <span class="flow-arrow">▶▶▶</span> 未来（選択・行動）
-            </div>
-        </div>
+        <div id="hud-status">Sonalia 4D View</div>
+        <div id="hud-footer">現在（入力・意味付け） ▶▶▶ 未来（選択・行動）</div>
     </div>
 
     <div id="panel">
-        <div class="close-btn" onclick="closePanel()">×</div>
-        <div class="p-header">
+        <div class="close" onclick="closePanel()">×</div>
+        <div class="p-head">
             <span class="p-tag" id="p-tag">TAG</span>
             <h2 class="p-title" id="p-title">Title</h2>
         </div>
         <div class="p-body">
-            <div class="data-section">
-                <span class="data-label">DEFINITION</span>
-                <div class="data-text" id="p-desc">...</div>
-            </div>
-            <div class="data-section">
-                <span class="data-label">SYSTEM ROLE</span>
-                <div class="data-text" id="p-role">...</div>
-            </div>
-            <div class="data-section">
-                <span class="data-label">INTERNAL VOICE</span>
-                <div class="data-thought" id="p-thought">...</div>
-            </div>
+            <div class="row"><span class="label">DEFINITION</span><div class="text" id="p-desc">...</div></div>
+            <div class="row"><span class="label">ROLE</span><div class="text" id="p-role">...</div></div>
+            <div class="row"><span class="label">THOUGHT</span><div class="thought" id="p-thought">...</div></div>
         </div>
     </div>
 
     <script>
-        // --- 0. SAFETY UTILS ---
-        function hideLoader() {
-            const l = document.getElementById('loader');
-            l.style.opacity = 0;
-            setTimeout(() => { l.style.display = 'none'; }, 800);
-        }
-        // 5秒経っても消えてなければ強制的に消す（保険）
-        setTimeout(() => { if(document.getElementById('loader').style.display!=='none') hideLoader(); }, 5000);
+        // エラー表示機能
+        window.onerror = function(msg) {
+            const el = document.getElementById('error-msg');
+            el.style.display = 'block';
+            el.innerHTML = "ERROR: " + msg + "<br>クリックして再試行してください";
+        };
 
-        function closePanel() {
-            document.getElementById('panel').classList.remove('active');
+        // 強制スタート
+        function startApp() {
+            document.getElementById('loader').style.opacity = 0;
+            setTimeout(() => { document.getElementById('loader').style.display='none'; }, 500);
         }
 
-        // --- 1. DATA DEFINITION ---
+        // Three.jsの準備確認
+        if (typeof THREE === 'undefined') {
+            throw new Error("Library not loaded.");
+        }
+
+        // --- DATA ---
         const DATA = {
-            LEFT: [ // Input, OS, DB (Cyan/Green)
-                { type: "OS (第1層)", name: "生存OS", desc: "【危険 ↔ 安全】\n最優先でリスクを回避し、生命維持を図る。", role: "リスク管理", thought: "「危なくないか？最悪どうなる？」" },
-                { type: "OS (第1層)", name: "生活OS", desc: "【既知 ↔ 未知】\nルーティン維持か、変化への適応か。", role: "習慣維持", thought: "「いつものパターンか？新しいか？」" },
-                { type: "OS (第2層)", name: "評価OS", desc: "【善 ↔ 悪】\n正義、ルール、マナーによる採点。", role: "善悪判断", thought: "「それは正しいか？許されるか？」" },
-                { type: "OS (第2層)", name: "所属OS", desc: "【内 ↔ 外】\n集団への帰属と疎外感の回避。", role: "集団帰属", thought: "「ここにいていいのか？浮いてないか？」" },
-                { type: "OS (第3層)", name: "報酬OS", desc: "【得 ↔ 損】\nコスパ、メリット、実利の計算。", role: "損得勘定", thought: "「やる価値あるか？元は取れるか？」" },
-                { type: "OS (第3層)", name: "意味OS", desc: "【意義 ↔ 無意味】\n自己実現、物語性、やりがい。", role: "意義探求", thought: "「どんな意味がある？誇れるか？」" },
-                { type: "OS (第4層)", name: "時間OS", desc: "【過去 ↔ 未来】\n経験則に基づくか、未来予測に基づくか。", role: "時間軸参照", thought: "「前もこうだった」「将来どうなる？」" },
-                { type: "OS (第4層)", name: "協調OS", desc: "【自分 ↔ 他人】\n自己主張か、全体への譲歩か。", role: "利害調整", thought: "「相手はどう思う？自分が譲るべきか？」" },
-                // DB
-                { type: "内面DB", name: "欲求DB", desc: "「〜したい」という根源的渇望の源泉。", role: "Motivation Source", thought: "(Deep Desire)" },
-                { type: "内面DB", name: "情動DB", desc: "「快・不快」などの感情記憶。", role: "Affective Memory", thought: "(Emotional Flashback)" },
-                { type: "内面DB", name: "価値観DB", desc: "「〜すべき」という信念体系。", role: "Core Values", thought: "(Must / Should)" },
-                { type: "内面DB", name: "無意識DB", desc: "思考を介さずに出る反射的なクセ。", role: "Auto-Pilot", thought: "(Reflex Action)" }
+            LEFT: [
+                { type: "OS(1層)", name: "生存OS", color: 0xFF3333, desc: "危険回避・安全確保を最優先。", role: "リスク管理", thought: "「危なくないか？」" },
+                { type: "OS(1層)", name: "生活OS", color: 0x33FF33, desc: "ルーティン維持・変化への適応。", role: "習慣維持", thought: "「いつものパターンか？」" },
+                { type: "OS(2層)", name: "評価OS", color: 0x3388FF, desc: "善悪・正誤・ルールの判定。", role: "善悪判断", thought: "「それは正しいか？」" },
+                { type: "OS(2層)", name: "所属OS", color: 0xFF8833, desc: "集団帰属・疎外感の回避。", role: "集団帰属", thought: "「浮いてないか？」" },
+                { type: "OS(3層)", name: "報酬OS", color: 0xFFD700, desc: "損得・コスパ・メリット計算。", role: "損得勘定", thought: "「損しないか？」" },
+                { type: "OS(3層)", name: "意味OS", color: 0x9933FF, desc: "意義・自己実現・物語性。", role: "意義探求", thought: "「どんな意味がある？」" },
+                { type: "OS(4層)", name: "時間OS", color: 0x00FFFF, desc: "過去の経験則・未来予測。", role: "時間軸参照", thought: "「将来どうなる？」" },
+                { type: "OS(4層)", name: "協調OS", color: 0xFF66AA, desc: "自他の利害バランス調整。", role: "利害調整", thought: "「相手はどう思う？」" },
+                { type: "DB", name: "欲求DB", color: 0xFF5500, desc: "根源的渇望の源泉。", role: "Motivation", thought: "(Deep Desire)" },
+                { type: "DB", name: "情動DB", color: 0x0055FF, desc: "快・不快の感情記憶。", role: "Emotion", thought: "(Flashback)" },
+                { type: "DB", name: "価値観DB", color: 0xFFD700, desc: "刷り込まれた信念・ルール。", role: "Belief", thought: "(Core Rule)" },
+                { type: "DB", name: "無意識DB", color: 0x666666, desc: "反射的な行動のクセ。", role: "Auto-Pilot", thought: "(Reflex)" }
             ],
-            RIGHT: [ // Output, Factors (Purple/Pink)
-                { type: "係数", name: "IQ (論理)", desc: "情報を構造化し、ロジックを組む力。", role: "Logic Engine", thought: "分析・分解・構造化" },
-                { type: "係数", name: "EQ (感情)", desc: "自分と他人の感情を察知し扱う力。", role: "Empathy Core", thought: "共感・配慮" },
-                { type: "係数", name: "SQ (社会)", desc: "関係性を構築し、場に適応する力。", role: "Social Net", thought: "適応・交渉" },
-                { type: "係数", name: "AQ (逆境)", desc: "ストレスや困難に対する粘りと回復力。", role: "Resilience", thought: "耐久・回復" },
-                { type: "係数", name: "CQ (創造)", desc: "新しいアイデアや工夫を生む力。", role: "Innovator", thought: "好奇心・発想" },
-                { type: "係数", name: "HQ (人間)", desc: "誠実さや公平さを保つ倫理観。", role: "Ethical Anchor", thought: "誠実・信頼" },
-                { type: "係数", name: "MQ (行動)", desc: "考えを即座に行動に移すスピード。", role: "Activator", thought: "即断・実行" },
-                { type: "係数", name: "KQ (知識)", desc: "知識・経験を必要な場面で取り出す力。", role: "Knowledge Base", thought: "応用・転用" }
+            RIGHT: [
+                { type: "係数", name: "IQ(論理)", color: 0x00CCFF, desc: "情報構造化・論理構築力。", role: "Logic Engine", thought: "分析・分解" },
+                { type: "係数", name: "EQ(感情)", color: 0xFF6666, desc: "感情察知・共感力。", role: "Empathy Core", thought: "共感・配慮" },
+                { type: "係数", name: "SQ(社会)", color: 0xFFCC00, desc: "関係構築・適応力。", role: "Social Net", thought: "人脈・交渉" },
+                { type: "係数", name: "AQ(逆境)", color: 0x888888, desc: "ストレス耐性・回復力。", role: "Resilience", thought: "耐久・忍耐" },
+                { type: "係数", name: "CQ(創造)", color: 0xAA00FF, desc: "好奇心・発想力。", role: "Innovator", thought: "発想・着眼" },
+                { type: "係数", name: "HQ(人間)", color: 0xFFFFFF, desc: "誠実さ・公平性。", role: "Ethical", thought: "信頼・誠実" },
+                { type: "係数", name: "MQ(行動)", color: 0xFF3300, desc: "実行スピードと量。", role: "Activator", thought: "即断・実行" },
+                { type: "係数", name: "KQ(知識)", color: 0x00FF88, desc: "知識活用・応用力。", role: "Knowledge", thought: "応用・転用" }
             ]
         };
 
-        // ==========================================
-        // 2. THREE.JS SETUP
-        // ==========================================
+        // --- SCENE ---
         const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.0015);
-        scene.background = new THREE.Color(0x020205);
-
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 3000);
+        scene.fog = new THREE.FogExp2(0x020205, 0.002);
+        
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 1, 3000);
         camera.position.set(0, 50, 400);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -213,229 +158,202 @@
         controls.autoRotateSpeed = 0.5;
 
         const mainGroup = new THREE.Group();
-        // 画像のような斜めアングル
-        mainGroup.rotation.z = Math.PI / 12;
+        mainGroup.rotation.z = Math.PI / 12; // 斜めアングル
         scene.add(mainGroup);
 
-        const interactables = [];
-        const nodes = [];
-
-        // Texture Generator
-        function createGlowTex(colorHex) {
+        // --- TEXTURE ---
+        function createGlow(hex) {
             const c = document.createElement('canvas'); c.width=64; c.height=64;
             const ctx = c.getContext('2d');
-            const col = new THREE.Color(colorHex);
+            const col = new THREE.Color(hex);
             const g = ctx.createRadialGradient(32,32,0, 32,32,32);
             g.addColorStop(0, `rgba(${col.r*255},${col.g*255},${col.b*255},1)`);
-            g.addColorStop(0.3, `rgba(${col.r*255},${col.g*255},${col.b*255},0.2)`);
-            g.addColorStop(1, 'rgba(0,0,0,0)');
+            g.addColorStop(0.4, 'rgba(0,0,0,0)');
             ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
             return new THREE.CanvasTexture(c);
         }
-        const cyanGlow = createGlowTex(0x00ffff);
-        const purpleGlow = createGlowTex(0xaa00ff);
 
-        // ==========================================
-        // 3. OBJECT GENERATION
-        // ==========================================
+        const nodes = [];
+        const interactables = [];
 
-        // --- A. LEFT HEMISPHERE (Input/OS/DB) ---
-        // Cyan/Green Cluster
+        // --- OBJECTS ---
+        
+        // 1. LEFT SIDE (Input/OS/DB) - Cyan/Green
+        const leftGroup = new THREE.Group();
+        mainGroup.add(leftGroup);
+
         DATA.LEFT.forEach((d, i) => {
-            const total = DATA.LEFT.length;
-            const phi = Math.acos( -1 + ( 2 * i ) / total );
-            const theta = Math.sqrt( total * Math.PI ) * phi;
+            const angle = (i / DATA.LEFT.length) * Math.PI * 2;
+            const r = 80 + Math.random()*40;
+            // 左側に配置
+            const pos = new THREE.Vector3(
+                -Math.abs(Math.cos(angle)*r*1.5) - 30,
+                Math.sin(angle)*r,
+                (Math.random()-0.5)*50
+            );
             
-            // 左側に配置 (X < 0)
-            const r = 100 + Math.random() * 40;
-            const x = -Math.abs(r * Math.cos(theta) * Math.sin(phi)) - 20; 
-            const y = r * Math.sin(theta) * Math.sin(phi);
-            const z = r * Math.cos(phi);
-            const pos = new THREE.Vector3(x, y, z);
-
-            const col = new THREE.Color().setHSL(0.45 + Math.random()*0.15, 1.0, 0.6); // Cyan range
-
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(4), new THREE.MeshBasicMaterial({ color: col }));
+            const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true });
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), mat);
             mesh.position.copy(pos);
-            mesh.userData = { data: d, color: col };
+            mesh.userData = { data: d, color: d.color };
             
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: cyanGlow, color: col, blending: THREE.AdditiveBlending }));
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(d.color), blending: THREE.AdditiveBlending }));
             spr.scale.set(40,40,1);
             mesh.add(spr);
 
-            mainGroup.add(mesh);
+            leftGroup.add(mesh);
             interactables.push(mesh);
-            nodes.push({pos: pos, color: col});
+            nodes.push({ pos: pos, color: new THREE.Color(d.color) });
         });
 
-        // --- B. RIGHT HEMISPHERE (Output/Factors) ---
-        // Purple/Pink Cluster
+        // 2. RIGHT SIDE (Output/Coef) - Purple/Pink
+        const rightGroup = new THREE.Group();
+        mainGroup.add(rightGroup);
+
         DATA.RIGHT.forEach((d, i) => {
-            const total = DATA.RIGHT.length;
-            const phi = Math.acos( -1 + ( 2 * i ) / total );
-            const theta = Math.sqrt( total * Math.PI ) * phi;
+            const angle = (i / DATA.RIGHT.length) * Math.PI * 2;
+            const r = 100 + Math.random()*40;
+            // 右側に配置
+            const pos = new THREE.Vector3(
+                Math.abs(Math.cos(angle)*r*1.8) + 50,
+                Math.sin(angle)*r,
+                (Math.random()-0.5)*50
+            );
 
-            // 右側に配置 (X > 0)
-            const r = 120 + Math.random() * 40;
-            const x = Math.abs(r * Math.cos(theta) * Math.sin(phi)) + 40; 
-            const y = r * Math.sin(theta) * Math.sin(phi);
-            const z = r * Math.cos(phi);
-            const pos = new THREE.Vector3(x, y, z);
-
-            const col = new THREE.Color().setHSL(0.75 + Math.random()*0.15, 1.0, 0.6); // Purple range
-
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(5), new THREE.MeshBasicMaterial({ color: col }));
+            const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true });
+            const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), mat);
             mesh.position.copy(pos);
-            mesh.userData = { data: d, color: col };
+            mesh.userData = { data: d, color: d.color };
 
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: purpleGlow, color: col, blending: THREE.AdditiveBlending }));
+            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(d.color), blending: THREE.AdditiveBlending }));
             spr.scale.set(50,50,1);
             mesh.add(spr);
 
-            mainGroup.add(mesh);
+            rightGroup.add(mesh);
             interactables.push(mesh);
-            nodes.push({pos: pos, color: col});
+            nodes.push({ pos: pos, color: new THREE.Color(d.color) });
         });
 
-        // --- C. CENTRAL CORE (Current Self) ---
-        const coreMesh = new THREE.Mesh(
-            new THREE.SphereGeometry(20, 32, 32),
-            new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent: true, opacity: 0.3 })
-        );
+        // 3. CENTER CORE
+        const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(15, 32, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent:true, opacity:0.3 }));
         mainGroup.add(coreMesh);
-        const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: cyanGlow, color: 0x00ffff, blending: THREE.AdditiveBlending }));
-        coreGlow.scale.set(150,150,1);
+        const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(0x00ffff), blending: THREE.AdditiveBlending }));
+        coreGlow.scale.set(120,120,1);
         coreMesh.add(coreGlow);
-        // Add core to nodes for connection
-        nodes.push({pos: new THREE.Vector3(0,0,0), color: new THREE.Color(0x00ffff)});
+        nodes.push({ pos: new THREE.Vector3(0,0,0), color: new THREE.Color(0x00ffff) });
 
-
-        // --- D. NEURAL CONNECTIONS (Lines) ---
-        const lineGeo = new THREE.Geometry(); // Using Geometry for simplicity in r128
-        const lineCols = [];
-
+        // 4. NETWORK LINES
+        const lineGeo = new THREE.Geometry();
+        const lineColors = [];
+        
         nodes.forEach((n1, i) => {
             nodes.forEach((n2, j) => {
                 if(i >= j) return;
                 const dist = n1.pos.distanceTo(n2.pos);
-                // Connect if close, or if connecting to center
-                if(dist < 90 || (n1.pos.lengthSq() < 100 && n2.pos.x > 0)) { 
+                // 距離が近いか、中心との接続なら線を引く
+                if(dist < 90 || (n1.pos.lengthSq() < 10 && n2.pos.x > 0)) {
                     lineGeo.vertices.push(n1.pos);
                     lineGeo.vertices.push(n2.pos);
-                    // Color gradient logic (simple average)
                     const c = n1.color.clone().lerp(n2.color, 0.5);
-                    lineGeo.colors.push(c, c);
+                    lineColors.push(c);
+                    lineColors.push(c);
                 }
             });
         });
-        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.15, blending: THREE.AdditiveBlending });
+        lineGeo.colors = lineColors;
+        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
         const network = new THREE.LineSegments(lineGeo, lineMat);
         mainGroup.add(network);
 
-        // --- E. DATA FLOW PARTICLES (Moving Dots) ---
-        const particleCount = 100;
-        const particles = new THREE.Geometry();
-        for(let i=0; i<particleCount; i++) {
-            particles.vertices.push(new THREE.Vector3(0,0,0));
-        }
-        const pMat = new THREE.PointsMaterial({ color: 0xffffff, size: 2, map: cyanGlow, transparent: true, blending: THREE.AdditiveBlending, depthWrite:false });
-        const particleSystem = new THREE.Points(particles, pMat);
-        mainGroup.add(particleSystem);
-
-        // Particle animation data
-        const pData = [];
-        for(let i=0; i<particleCount; i++) {
-            pData.push({
-                pathStart: new THREE.Vector3(-200 + Math.random()*50, (Math.random()-0.5)*100, (Math.random()-0.5)*100),
-                pathEnd: new THREE.Vector3(200 + Math.random()*50, (Math.random()-0.5)*100, (Math.random()-0.5)*100),
-                progress: Math.random(),
-                speed: 0.005 + Math.random()*0.01
-            });
+        // 5. ARROWS (Vectors)
+        const arrowGroup = new THREE.Group();
+        mainGroup.add(arrowGroup);
+        // Right Arrows
+        for(let i=0; i<5; i++) {
+            const dir = new THREE.Vector3(1, 0, 0);
+            const origin = new THREE.Vector3(-50, (Math.random()-0.5)*100, (Math.random()-0.5)*50);
+            const len = 200 + Math.random()*100;
+            const arrow = new THREE.ArrowHelper(dir, origin, len, 0xaa00ff, 20, 10);
+            arrowGroup.add(arrow);
         }
 
-        // ==========================================
-        // 4. ANIMATION & INTERACTION
-        // ==========================================
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        window.addEventListener('mousedown', (e) => {
-            // UI click ignore
-            if(e.target.closest('#panel') || e.target.closest('#hud-header')) return;
-
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(interactables);
-            
-            if(hits.length > 0) {
-                const target = hits[0].object;
-                const d = target.userData.data;
-                const col = target.userData.color;
-                
-                // Panel Update
-                document.getElementById('p-tag').innerText = d.type;
-                document.getElementById('p-tag').style.background = '#' + col.getHexString();
-                
-                const title = document.getElementById('p-title');
-                title.innerText = d.name;
-                title.style.color = '#' + col.getHexString();
-                title.style.textShadow = `0 0 20px #${col.getHexString()}`;
-                
-                document.getElementById('p-desc').innerText = d.desc;
-                document.getElementById('p-role').innerText = d.role;
-                document.getElementById('p-thought').innerText = d.thought || "...";
-                
-                document.getElementById('panel').classList.add('active');
-
-                // Camera Focus
-                const endPos = target.position.clone().normalize().multiplyScalar(200);
-                endPos.y += 30;
-                new TWEEN.Tween(camera.position)
-                    .to({x: endPos.x, y: endPos.y, z: endPos.z}, 1000)
-                    .easing(TWEEN.Easing.Cubic.Out)
-                    .start();
-            } else {
-                document.getElementById('panel').classList.remove('active');
-            }
-        });
-
+        // --- ANIMATION ---
         const clock = new THREE.Clock();
+        
+        // 自動スタート
+        setTimeout(startApp, 2000);
 
-        function animate(time) {
+        function animate() {
             requestAnimationFrame(animate);
-            TWEEN.update(time);
+            const time = clock.getElapsedTime();
+            TWEEN.update();
             controls.update();
-            const delta = clock.getElapsedTime();
 
-            // 1. Overall Pulse
-            const scale = 1 + Math.sin(delta) * 0.02;
+            const scale = 1 + Math.sin(time)*0.02;
             network.scale.set(scale, scale, scale);
-            coreGroup.scale.set(scale, scale, scale);
-
-            // 2. Particle Flow (Left to Right)
-            pData.forEach((p, i) => {
-                p.progress += p.speed;
-                if(p.progress > 1) p.progress = 0;
-                
-                const v = particles.vertices[i];
-                v.lerpVectors(p.pathStart, p.pathEnd, p.progress);
-                
-                // Wiggle
-                v.y += Math.sin(delta * 2 + i) * 0.5;
-                v.z += Math.cos(delta * 2 + i) * 0.5;
+            leftGroup.rotation.z = Math.sin(time*0.1)*0.05;
+            
+            // Arrow Animation
+            arrowGroup.children.forEach((a, i) => {
+                a.position.x += 0.5;
+                if(a.position.x > 50) a.position.x = -50;
+                // 明滅
+                const op = (Math.sin(time*3 + i)+1)/2 * 0.5 + 0.2;
+                if(a.line.material) a.line.material.opacity = op;
+                if(a.cone.material) a.cone.material.opacity = op;
             });
-            particles.verticesNeedUpdate = true;
 
             renderer.render(scene, camera);
         }
         animate();
 
+        // --- INTERACTION ---
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        const panel = document.getElementById('panel');
+
+        window.addEventListener('mousedown', (e) => {
+            if(e.clientX < 50 || e.clientY < 50) return; // Ignore HUD area roughly
+            
+            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(interactables);
+
+            if(hits.length > 0) {
+                const d = hits[0].object.userData.data;
+                const col = hits[0].object.userData.color;
+                showPanel(d, col);
+                
+                // Camera Focus
+                const targetPos = hits[0].object.position.clone().multiplyScalar(1.2);
+                targetPos.z += 100;
+                new TWEEN.Tween(camera.position).to({x:targetPos.x, y:targetPos.y, z:targetPos.z}, 1000).easing(TWEEN.Easing.Cubic.Out).start();
+            } else {
+                closePanel();
+            }
+        });
+
+        function showPanel(d, col) {
+            document.getElementById('p-tag').innerText = d.type;
+            document.getElementById('p-tag').style.background = '#' + new THREE.Color(col).getHexString();
+            document.getElementById('p-title').innerText = d.name;
+            document.getElementById('p-title').style.color = '#' + new THREE.Color(col).getHexString();
+            document.getElementById('p-desc').innerText = d.desc;
+            document.getElementById('p-role').innerText = d.role;
+            document.getElementById('p-thought').innerText = d.thought;
+            panel.classList.add('active');
+        }
+        function closePanel() {
+            panel.classList.remove('active');
+        }
+
         window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.aspect = window.innerWidth/window.innerHeight;
             camera.updateProjectionMatrix();
             renderer.setSize(window.innerWidth, window.innerHeight);
         });
+
     </script>
 </body>
 </html>
