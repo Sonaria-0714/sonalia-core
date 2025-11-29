@@ -3,85 +3,78 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SONALIA 4D VIEW</title>
+    <title>SONALIA: NEURAL FLOW FINAL</title>
     <style>
         body { margin: 0; overflow: hidden; background-color: #000; font-family: 'Segoe UI', sans-serif; }
         canvas { display: block; }
 
-        /* --- UI LAYER --- */
-        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
-
+        /* UIレイヤー */
+        #ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+        
         #hud-title {
             position: absolute; top: 30px; left: 30px;
-            border-left: 5px solid #00ffff; padding-left: 20px;
-            background: linear-gradient(90deg, rgba(0,20,40,0.8), transparent);
+            border-left: 4px solid #00ffff; padding-left: 20px;
+            background: linear-gradient(90deg, rgba(0,30,40,0.8), transparent);
         }
         h1 { margin: 0; font-size: 32px; color: #fff; text-shadow: 0 0 15px #00ffff; letter-spacing: 2px; }
-        p { margin: 5px 0 0; color: #00ffff; font-size: 14px; letter-spacing: 1px; }
+        p { margin: 5px 0 0; color: #00ffff; font-size: 14px; letter-spacing: 1px; font-family: monospace; }
 
         #hud-status {
-            position: absolute; top: 30px; right: 30px;
-            background: rgba(20,0,30,0.8); border: 1px solid #aa00ff;
-            color: #e0b0ff; padding: 5px 15px; border-radius: 20px; font-size: 12px;
+            position: absolute; top: 30px; right: 30px; text-align: right;
+        }
+        .badge {
+            background: rgba(20,0,30,0.8); border: 1px solid #d000ff; color: #e0b0ff;
+            padding: 5px 15px; border-radius: 20px; font-size: 12px; letter-spacing: 1px;
+            box-shadow: 0 0 10px rgba(200,0,255,0.3);
         }
 
-        #hud-footer {
+        #hud-flow {
             position: absolute; bottom: 30px; width: 100%; text-align: center;
-            color: #88aaff; font-size: 16px; letter-spacing: 4px; text-shadow: 0 0 10px rgba(0,100,255,0.5);
+            color: #88aaff; font-size: 14px; letter-spacing: 3px; font-family: monospace;
+            text-shadow: 0 0 10px rgba(0,100,255,0.5);
         }
 
-        /* --- PANEL --- */
+        /* 詳細パネル */
         #panel {
             position: absolute; top: 0; right: 0; width: 350px; height: 100%;
             background: rgba(5,8,12,0.95); border-left: 1px solid #333;
-            transform: translateX(100%); transition: 0.3s;
-            color: #eee; display: flex; flex-direction: column; z-index: 20; pointer-events: auto;
+            transform: translateX(100%); transition: 0.3s; pointer-events: auto;
+            color: #eee; display: flex; flex-direction: column;
+            box-shadow: -20px 0 50px rgba(0,0,0,0.8);
         }
         #panel.active { transform: translateX(0); }
-        .p-head { padding: 30px; border-bottom: 1px solid #333; background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
-        .p-tag { background: #00ffff; color: #000; padding: 2px 6px; font-size: 10px; font-weight: bold; border-radius: 2px; }
-        .p-title { font-size: 24px; color: #fff; margin: 10px 0 0; text-shadow: 0 0 10px currentColor; }
+        
+        .p-head { padding: 30px; border-bottom: 1px solid rgba(255,255,255,0.1); background: linear-gradient(180deg, rgba(0,255,255,0.1), transparent); }
+        .p-tag { font-size: 10px; background: #00ffff; color: #000; padding: 2px 6px; border-radius: 2px; font-weight: bold; }
+        .p-title { font-size: 24px; margin: 10px 0 0; color: #fff; text-shadow: 0 0 10px currentColor; }
+        
         .p-body { padding: 30px; overflow-y: auto; flex: 1; }
         .row { margin-bottom: 25px; }
-        .label { font-size: 10px; color: #00ffff; border-bottom: 1px solid #333; display: block; margin-bottom: 5px; }
+        .label { font-size: 10px; color: #00ffff; border-bottom: 1px solid rgba(255,255,255,0.2); display: block; margin-bottom: 5px; }
         .text { font-size: 13px; line-height: 1.6; color: #ccc; }
         .thought { font-family: monospace; color: #fff; background: rgba(0,255,255,0.05); padding: 10px; border-left: 3px solid #00ffff; }
-        .close { position: absolute; top: 20px; right: 20px; cursor: pointer; font-size: 24px; color: #666; }
 
-        /* --- LOADER --- */
-        #loader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.5s; cursor: pointer;
-        }
-        .load-text { color: #00ffff; font-size: 20px; letter-spacing: 5px; animation: blink 1s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-        #error-msg { color: red; font-family: monospace; margin-top: 20px; font-size: 12px; display: none; background: #200; padding: 10px; }
-
+        .close-btn { position: absolute; top: 20px; right: 20px; font-size: 24px; cursor: pointer; color: #666; }
+        .close-btn:hover { color: #fff; }
     </style>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
 </head>
 <body>
-
-    <div id="loader" onclick="startApp()">
-        <div class="load-text">SONALIA SYSTEM LOADING...</div>
-        <div id="error-msg"></div>
-    </div>
 
     <div id="ui-layer">
         <div id="hud-title">
             <h1>思考回路マップ</h1>
             <p>4層OS × 内面DB × 8係数</p>
         </div>
-        <div id="hud-status">Sonalia 4D View</div>
-        <div id="hud-footer">現在（入力・意味付け） ▶▶▶ 未来（選択・行動）</div>
+        <div id="hud-status">
+            <span class="badge">Sonalia 4D View</span>
+        </div>
+        <div id="hud-flow">
+            現在（入力・意味付け） ▶▶▶ 未来（選択・行動）
+        </div>
     </div>
 
     <div id="panel">
-        <div class="close" onclick="closePanel()">×</div>
+        <div class="close-btn" onclick="closePanel()">×</div>
         <div class="p-head">
             <span class="p-tag" id="p-tag">TAG</span>
             <h2 class="p-title" id="p-title">Title</h2>
@@ -93,267 +86,186 @@
         </div>
     </div>
 
+    <canvas id="canvas"></canvas>
+
     <script>
-        // エラー表示機能
-        window.onerror = function(msg) {
-            const el = document.getElementById('error-msg');
-            el.style.display = 'block';
-            el.innerHTML = "ERROR: " + msg + "<br>クリックして再試行してください";
-        };
-
-        // 強制スタート
-        function startApp() {
-            document.getElementById('loader').style.opacity = 0;
-            setTimeout(() => { document.getElementById('loader').style.display='none'; }, 500);
-        }
-
-        // Three.jsの準備確認
-        if (typeof THREE === 'undefined') {
-            throw new Error("Library not loaded.");
-        }
-
-        // --- DATA ---
+        // データ定義
         const DATA = {
             LEFT: [
-                { type: "OS(1層)", name: "生存OS", color: 0xFF3333, desc: "危険回避・安全確保を最優先。", role: "リスク管理", thought: "「危なくないか？」" },
-                { type: "OS(1層)", name: "生活OS", color: 0x33FF33, desc: "ルーティン維持・変化への適応。", role: "習慣維持", thought: "「いつものパターンか？」" },
-                { type: "OS(2層)", name: "評価OS", color: 0x3388FF, desc: "善悪・正誤・ルールの判定。", role: "善悪判断", thought: "「それは正しいか？」" },
-                { type: "OS(2層)", name: "所属OS", color: 0xFF8833, desc: "集団帰属・疎外感の回避。", role: "集団帰属", thought: "「浮いてないか？」" },
-                { type: "OS(3層)", name: "報酬OS", color: 0xFFD700, desc: "損得・コスパ・メリット計算。", role: "損得勘定", thought: "「損しないか？」" },
-                { type: "OS(3層)", name: "意味OS", color: 0x9933FF, desc: "意義・自己実現・物語性。", role: "意義探求", thought: "「どんな意味がある？」" },
-                { type: "OS(4層)", name: "時間OS", color: 0x00FFFF, desc: "過去の経験則・未来予測。", role: "時間軸参照", thought: "「将来どうなる？」" },
-                { type: "OS(4層)", name: "協調OS", color: 0xFF66AA, desc: "自他の利害バランス調整。", role: "利害調整", thought: "「相手はどう思う？」" },
-                { type: "DB", name: "欲求DB", color: 0xFF5500, desc: "根源的渇望の源泉。", role: "Motivation", thought: "(Deep Desire)" },
-                { type: "DB", name: "情動DB", color: 0x0055FF, desc: "快・不快の感情記憶。", role: "Emotion", thought: "(Flashback)" },
-                { type: "DB", name: "価値観DB", color: 0xFFD700, desc: "刷り込まれた信念・ルール。", role: "Belief", thought: "(Core Rule)" },
-                { type: "DB", name: "無意識DB", color: 0x666666, desc: "反射的な行動のクセ。", role: "Auto-Pilot", thought: "(Reflex)" }
+                { id:"OS1", type:"OS(1層)", name:"生存OS", color:"#FF3333", desc:"危険回避・安全確保。", role:"リスク管理", thought:"「危なくないか？」" },
+                { id:"OS2", type:"OS(1層)", name:"生活OS", color:"#33FF33", desc:"ルーティン維持・変化適応。", role:"習慣維持", thought:"「いつものパターン？」" },
+                { id:"OS3", type:"OS(2層)", name:"評価OS", color:"#3388FF", desc:"善悪・ルールの判定。", role:"善悪判断", thought:"「それは正しいか？」" },
+                { id:"OS4", type:"OS(2層)", name:"所属OS", color:"#FF8833", desc:"集団帰属・疎外感回避。", role:"集団帰属", thought:"「浮いてないか？」" },
+                { id:"OS5", type:"OS(3層)", name:"報酬OS", color:"#FFD700", desc:"損得・コスパ計算。", role:"損得勘定", thought:"「損しないか？」" },
+                { id:"OS6", type:"OS(3層)", name:"意味OS", color:"#9933FF", desc:"意義・自己実現。", role:"意義探求", thought:"「どんな意味がある？」" },
+                { id:"OS7", type:"OS(4層)", name:"時間OS", color:"#00FFFF", desc:"過去経験・未来予測。", role:"時間参照", thought:"「将来どうなる？」" },
+                { id:"OS8", type:"OS(4層)", name:"協調OS", color:"#FF66AA", desc:"利害バランス調整。", role:"利害調整", thought:"「相手はどう思う？」" },
+                { id:"DB1", type:"DB", name:"欲求DB", color:"#FF5500", desc:"根源的渇望。", role:"Motivation", thought:"(Deep Desire)" },
+                { id:"DB2", type:"DB", name:"情動DB", color:"#0055FF", desc:"感情記憶。", role:"Emotion", thought:"(Flashback)" },
+                { id:"DB3", type:"DB", name:"価値観DB", color:"#FFD700", desc:"信念・ルール。", role:"Belief", thought:"(Core Rules)" },
+                { id:"DB4", type:"DB", name:"無意識DB", color:"#666666", desc:"反射的クセ。", role:"Auto-Pilot", thought:"(Reflex)" }
             ],
             RIGHT: [
-                { type: "係数", name: "IQ(論理)", color: 0x00CCFF, desc: "情報構造化・論理構築力。", role: "Logic Engine", thought: "分析・分解" },
-                { type: "係数", name: "EQ(感情)", color: 0xFF6666, desc: "感情察知・共感力。", role: "Empathy Core", thought: "共感・配慮" },
-                { type: "係数", name: "SQ(社会)", color: 0xFFCC00, desc: "関係構築・適応力。", role: "Social Net", thought: "人脈・交渉" },
-                { type: "係数", name: "AQ(逆境)", color: 0x888888, desc: "ストレス耐性・回復力。", role: "Resilience", thought: "耐久・忍耐" },
-                { type: "係数", name: "CQ(創造)", color: 0xAA00FF, desc: "好奇心・発想力。", role: "Innovator", thought: "発想・着眼" },
-                { type: "係数", name: "HQ(人間)", color: 0xFFFFFF, desc: "誠実さ・公平性。", role: "Ethical", thought: "信頼・誠実" },
-                { type: "係数", name: "MQ(行動)", color: 0xFF3300, desc: "実行スピードと量。", role: "Activator", thought: "即断・実行" },
-                { type: "係数", name: "KQ(知識)", color: 0x00FF88, desc: "知識活用・応用力。", role: "Knowledge", thought: "応用・転用" }
+                { id:"IQ", type:"係数", name:"IQ(論理)", color:"#00CCFF", desc:"情報構造化・論理力。", role:"Logic Engine", thought:"分析・分解" },
+                { id:"EQ", type:"係数", name:"EQ(感情)", color:"#FF6666", desc:"感情察知・共感力。", role:"Empathy", thought:"共感・配慮" },
+                { id:"SQ", type:"係数", name:"SQ(社会)", color:"#FFCC00", desc:"関係構築・適応力。", role:"Social Net", thought:"適応・交渉" },
+                { id:"AQ", type:"係数", name:"AQ(逆境)", color:"#888888", desc:"ストレス耐性。", role:"Resilience", thought:"耐久・忍耐" },
+                { id:"CQ", type:"係数", name:"CQ(創造)", color:"#AA00FF", desc:"好奇心・発想力。", role:"Innovator", thought:"発想・着眼" },
+                { id:"HQ", type:"係数", name:"HQ(人間)", color:"#FFFFFF", desc:"誠実さ・公平性。", role:"Ethical", thought:"誠実・信頼" },
+                { id:"MQ", type:"係数", name:"MQ(行動)", color:"#FF3300", desc:"実行スピード。", role:"Activator", thought:"即断・実行" },
+                { id:"KQ", type:"係数", name:"KQ(知識)", color:"#00FF88", desc:"知識活用力。", role:"Knowledge", thought:"応用・転用" }
             ]
         };
 
-        // --- SCENE ---
-        const scene = new THREE.Scene();
-        scene.fog = new THREE.FogExp2(0x020205, 0.002);
-        
-        const camera = new THREE.PerspectiveCamera(50, window.innerWidth/window.innerHeight, 1, 3000);
-        camera.position.set(0, 50, 400);
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+        let nodes = [];
+        let mouse = { x: 0, y: 0, down: false };
 
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        document.body.appendChild(renderer.domElement);
-
-        const controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.autoRotate = true;
-        controls.autoRotateSpeed = 0.5;
-
-        const mainGroup = new THREE.Group();
-        mainGroup.rotation.z = Math.PI / 12; // 斜めアングル
-        scene.add(mainGroup);
-
-        // --- TEXTURE ---
-        function createGlow(hex) {
-            const c = document.createElement('canvas'); c.width=64; c.height=64;
-            const ctx = c.getContext('2d');
-            const col = new THREE.Color(hex);
-            const g = ctx.createRadialGradient(32,32,0, 32,32,32);
-            g.addColorStop(0, `rgba(${col.r*255},${col.g*255},${col.b*255},1)`);
-            g.addColorStop(0.4, 'rgba(0,0,0,0)');
-            ctx.fillStyle=g; ctx.fillRect(0,0,64,64);
-            return new THREE.CanvasTexture(c);
-        }
-
-        const nodes = [];
-        const interactables = [];
-
-        // --- OBJECTS ---
-        
-        // 1. LEFT SIDE (Input/OS/DB) - Cyan/Green
-        const leftGroup = new THREE.Group();
-        mainGroup.add(leftGroup);
-
-        DATA.LEFT.forEach((d, i) => {
-            const angle = (i / DATA.LEFT.length) * Math.PI * 2;
-            const r = 80 + Math.random()*40;
-            // 左側に配置
-            const pos = new THREE.Vector3(
-                -Math.abs(Math.cos(angle)*r*1.5) - 30,
-                Math.sin(angle)*r,
-                (Math.random()-0.5)*50
-            );
-            
-            const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true });
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(4, 16, 16), mat);
-            mesh.position.copy(pos);
-            mesh.userData = { data: d, color: d.color };
-            
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(d.color), blending: THREE.AdditiveBlending }));
-            spr.scale.set(40,40,1);
-            mesh.add(spr);
-
-            leftGroup.add(mesh);
-            interactables.push(mesh);
-            nodes.push({ pos: pos, color: new THREE.Color(d.color) });
-        });
-
-        // 2. RIGHT SIDE (Output/Coef) - Purple/Pink
-        const rightGroup = new THREE.Group();
-        mainGroup.add(rightGroup);
-
-        DATA.RIGHT.forEach((d, i) => {
-            const angle = (i / DATA.RIGHT.length) * Math.PI * 2;
-            const r = 100 + Math.random()*40;
-            // 右側に配置
-            const pos = new THREE.Vector3(
-                Math.abs(Math.cos(angle)*r*1.8) + 50,
-                Math.sin(angle)*r,
-                (Math.random()-0.5)*50
-            );
-
-            const mat = new THREE.MeshBasicMaterial({ color: d.color, wireframe: true });
-            const mesh = new THREE.Mesh(new THREE.BoxGeometry(6,6,6), mat);
-            mesh.position.copy(pos);
-            mesh.userData = { data: d, color: d.color };
-
-            const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(d.color), blending: THREE.AdditiveBlending }));
-            spr.scale.set(50,50,1);
-            mesh.add(spr);
-
-            rightGroup.add(mesh);
-            interactables.push(mesh);
-            nodes.push({ pos: pos, color: new THREE.Color(d.color) });
-        });
-
-        // 3. CENTER CORE
-        const coreMesh = new THREE.Mesh(new THREE.SphereGeometry(15, 32, 32), new THREE.MeshBasicMaterial({ color: 0x00ffff, wireframe: true, transparent:true, opacity:0.3 }));
-        mainGroup.add(coreMesh);
-        const coreGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map: createGlow(0x00ffff), blending: THREE.AdditiveBlending }));
-        coreGlow.scale.set(120,120,1);
-        coreMesh.add(coreGlow);
-        nodes.push({ pos: new THREE.Vector3(0,0,0), color: new THREE.Color(0x00ffff) });
-
-        // 4. NETWORK LINES
-        const lineGeo = new THREE.Geometry();
-        const lineColors = [];
-        
-        nodes.forEach((n1, i) => {
-            nodes.forEach((n2, j) => {
-                if(i >= j) return;
-                const dist = n1.pos.distanceTo(n2.pos);
-                // 距離が近いか、中心との接続なら線を引く
-                if(dist < 90 || (n1.pos.lengthSq() < 10 && n2.pos.x > 0)) {
-                    lineGeo.vertices.push(n1.pos);
-                    lineGeo.vertices.push(n2.pos);
-                    const c = n1.color.clone().lerp(n2.color, 0.5);
-                    lineColors.push(c);
-                    lineColors.push(c);
-                }
-            });
-        });
-        lineGeo.colors = lineColors;
-        const lineMat = new THREE.LineBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.2, blending: THREE.AdditiveBlending });
-        const network = new THREE.LineSegments(lineGeo, lineMat);
-        mainGroup.add(network);
-
-        // 5. ARROWS (Vectors)
-        const arrowGroup = new THREE.Group();
-        mainGroup.add(arrowGroup);
-        // Right Arrows
-        for(let i=0; i<5; i++) {
-            const dir = new THREE.Vector3(1, 0, 0);
-            const origin = new THREE.Vector3(-50, (Math.random()-0.5)*100, (Math.random()-0.5)*50);
-            const len = 200 + Math.random()*100;
-            const arrow = new THREE.ArrowHelper(dir, origin, len, 0xaa00ff, 20, 10);
-            arrowGroup.add(arrow);
-        }
-
-        // --- ANIMATION ---
-        const clock = new THREE.Clock();
-        
-        // 自動スタート
-        setTimeout(startApp, 2000);
-
-        function animate() {
-            requestAnimationFrame(animate);
-            const time = clock.getElapsedTime();
-            TWEEN.update();
-            controls.update();
-
-            const scale = 1 + Math.sin(time)*0.02;
-            network.scale.set(scale, scale, scale);
-            leftGroup.rotation.z = Math.sin(time*0.1)*0.05;
-            
-            // Arrow Animation
-            arrowGroup.children.forEach((a, i) => {
-                a.position.x += 0.5;
-                if(a.position.x > 50) a.position.x = -50;
-                // 明滅
-                const op = (Math.sin(time*3 + i)+1)/2 * 0.5 + 0.2;
-                if(a.line.material) a.line.material.opacity = op;
-                if(a.cone.material) a.cone.material.opacity = op;
-            });
-
-            renderer.render(scene, camera);
-        }
-        animate();
-
-        // --- INTERACTION ---
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-        const panel = document.getElementById('panel');
-
-        window.addEventListener('mousedown', (e) => {
-            if(e.clientX < 50 || e.clientY < 50) return; // Ignore HUD area roughly
-            
-            mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-            mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-            const hits = raycaster.intersectObjects(interactables);
-
-            if(hits.length > 0) {
-                const d = hits[0].object.userData.data;
-                const col = hits[0].object.userData.color;
-                showPanel(d, col);
-                
-                // Camera Focus
-                const targetPos = hits[0].object.position.clone().multiplyScalar(1.2);
-                targetPos.z += 100;
-                new TWEEN.Tween(camera.position).to({x:targetPos.x, y:targetPos.y, z:targetPos.z}, 1000).easing(TWEEN.Easing.Cubic.Out).start();
-            } else {
-                closePanel();
+        // ノードクラス
+        class Node {
+            constructor(data, x, y, size) {
+                this.data = data;
+                this.x = x;
+                this.y = y;
+                this.baseX = x;
+                this.baseY = y;
+                this.size = size;
+                this.color = data.color;
+                this.hover = false;
             }
-        });
+            update(time) {
+                // ふわふわ動く
+                this.x = this.baseX + Math.sin(time * 0.001 + this.baseY) * 10;
+                this.y = this.baseY + Math.cos(time * 0.001 + this.baseX) * 10;
+                
+                // マウス判定
+                const dx = mouse.x - this.x;
+                const dy = mouse.y - this.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                this.hover = dist < this.size + 10;
+                
+                if (this.hover && mouse.down) {
+                    openPanel(this.data);
+                    mouse.down = false; // 一回だけ反応
+                }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.hover ? this.size * 1.5 : this.size, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = this.hover ? 30 : 15;
+                ctx.shadowColor = this.color;
+                ctx.fill();
+                ctx.shadowBlur = 0;
 
-        function showPanel(d, col) {
+                // テキスト
+                ctx.fillStyle = "#fff";
+                ctx.font = "10px Arial";
+                ctx.textAlign = "center";
+                ctx.fillText(this.data.name, this.x, this.y + this.size + 15);
+            }
+        }
+
+        // 初期化
+        function init() {
+            resize();
+            // 左側ノード生成
+            const leftCount = DATA.LEFT.length;
+            DATA.LEFT.forEach((d, i) => {
+                const angle = (i / leftCount) * Math.PI * 2;
+                const r = Math.min(width, height) * 0.25;
+                const x = (width * 0.3) + Math.cos(angle) * r * 0.6;
+                const y = (height * 0.5) + Math.sin(angle) * r;
+                nodes.push(new Node(d, x, y, 8));
+            });
+            // 右側ノード生成
+            const rightCount = DATA.RIGHT.length;
+            DATA.RIGHT.forEach((d, i) => {
+                const angle = (i / rightCount) * Math.PI * 2;
+                const r = Math.min(width, height) * 0.3;
+                const x = (width * 0.7) + Math.cos(angle) * r * 0.6;
+                const y = (height * 0.5) + Math.sin(angle) * r;
+                nodes.push(new Node(d, x, y, 10));
+            });
+            // 中心コア
+            nodes.push(new Node({name:"現在", color:"#00ffff", type:"CORE"}, width*0.5, height*0.5, 20));
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // アニメーションループ
+        function animate(time) {
+            ctx.fillStyle = "rgba(2, 2, 5, 0.2)"; // 残像効果
+            ctx.fillRect(0, 0, width, height);
+
+            // 線を描画
+            ctx.lineWidth = 0.5;
+            for(let i=0; i<nodes.length; i++) {
+                nodes[i].update(time);
+                for(let j=i+1; j<nodes.length; j++) {
+                    const dx = nodes[i].x - nodes[j].x;
+                    const dy = nodes[i].y - nodes[j].y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist < 200) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(0, 255, 255, ${1 - dist/200})`;
+                        ctx.moveTo(nodes[i].x, nodes[i].y);
+                        ctx.lineTo(nodes[j].x, nodes[j].y);
+                        ctx.stroke();
+                    }
+                }
+            }
+
+            // ノードを描画
+            nodes.forEach(n => n.draw());
+
+            // フロー粒子（左から右へ）
+            if(Math.random() > 0.9) {
+                particles.push({
+                    x: 0, 
+                    y: height/2 + (Math.random()-0.5)*height, 
+                    vx: 5 + Math.random()*5, 
+                    vy: (Math.random()-0.5)*2,
+                    life: 1.0
+                });
+            }
+            ctx.fillStyle = "#fff";
+            for(let i=particles.length-1; i>=0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life -= 0.005;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 2, 0, Math.PI*2);
+                ctx.fill();
+                if(p.life <= 0 || p.x > width) particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        // UI操作
+        function openPanel(d) {
+            if(!d.desc) return;
             document.getElementById('p-tag').innerText = d.type;
-            document.getElementById('p-tag').style.background = '#' + new THREE.Color(col).getHexString();
+            document.getElementById('p-tag').style.background = d.color;
             document.getElementById('p-title').innerText = d.name;
-            document.getElementById('p-title').style.color = '#' + new THREE.Color(col).getHexString();
+            document.getElementById('p-title').style.color = d.color;
             document.getElementById('p-desc').innerText = d.desc;
             document.getElementById('p-role').innerText = d.role;
-            document.getElementById('p-thought').innerText = d.thought;
-            panel.classList.add('active');
+            document.getElementById('p-thought').innerText = d.thought || "...";
+            document.getElementById('panel').classList.add('active');
         }
-        function closePanel() {
-            panel.classList.remove('active');
+        window.closePanel = function() {
+            document.getElementById('panel').classList.remove('active');
         }
 
-        window.addEventListener('resize', () => {
-            camera.aspect = window.innerWidth/window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        });
-
-    </script>
-</body>
-</html>
+        window.addEventListener('resize', resize);
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.
